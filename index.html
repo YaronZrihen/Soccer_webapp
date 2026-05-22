@@ -940,7 +940,7 @@ function TabRoster({players, history, auth, onAuth, onSave, showMsg}) {
             </div>
             <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
               <button className="btn btn-secondary btn-sm" onClick={()=>toggleActive(p.name)}>
-                {isActive(p)?'🔴 השבת':'🟢 הפעל'}
+                {isActive(p)?'🔴 לא פעיל':'🟢 פעיל'}
               </button>
               <button className="btn btn-secondary btn-sm" onClick={()=>setEditPlayer(p)}>📝 ערוך</button>
               {phone&&pin&&(
