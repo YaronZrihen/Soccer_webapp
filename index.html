@@ -350,23 +350,32 @@ async function apiFetch(action) {
       
       return {
         date: game.date || '',
-        winningPlayers: winningPlayers, // שומרים את רשימת המנצחים האמיתית
+        winningPlayers: winningPlayers,
         avg_score: safeFloat(game.avg_score).toFixed(1),
-        winner: game.winner || '' // 'לבן' או 'שחור'
+        winner: game.winner || ''
       };
     });
   }
   return data;
 }
+
+async function apiPost(body) {
+  try {
+    await fetch(API, {
+      method: 'POST',
+      body: JSON.stringify(body),
+      mode: 'no-cors', 
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8'
+      }
+    });
     
-    // מאחר ו-no-cors לא מאפשר לקרוא את התגובה השרת, אנחנו "מזייפים" הצלחה עבור האפליקציה
     return { success: true };
   } catch (error) {
     console.error("שגיאה בשליחת הנתונים:", error);
     return { success: false, error: error.message };
   }
 }
-
 // ── Team Division ─────────────────────────────────────────────
 
 const ROLE_GROUPS = {
