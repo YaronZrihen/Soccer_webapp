@@ -1233,20 +1233,43 @@ function PlayerForm({player, allPlayers, onSave}) {
 // ── TAB: היסטוריה ────────────────────────────────────────────
 
 function TabHistory({ history, onSave }) {
+  // --- חלק 1: חישוב אוטומטי של סטטיסטיקת השחקנים מתוך ההיסטוריה ---
+  const playerStats = {};
+
+  history.forEach(game => {
+    if (!game.winner || !game.players) return;
+    
+    // הפיכת טקסט השחקנים של המשחק למערך שמות נקי
+    const gamePlayers = String(game.players).split(',').map(s => s.trim()).filter(Boolean);
+    
+    gamePlayers.forEach(playerName => {
+      if (!playerStats[playerName]) {
+        playerStats[playerName] = { name: playerName, wins: 0, games: 0 };
+      }
+      playerStats[playerName].games += 1;
+      playerStats[playerName].wins += 1; // כרגע השמות ברשימה הם רק של הקבוצה המנצחת
+    });
+  });
+
+  // הפיכה למערך ומיון לפי כמות ניצחונות (מהגבוה לנמוך)
+  const statsArray = Object.values(playerStats).sort((a, b) => b.wins - a.wins);
+
+  // --- חלק 2: מנגנון עדכון מנצח ושמות השחקנים ---
   const handleWinner = async (gameDate, winnerTeam) => {
     const updatedHistory = history.map(game => {
       if (game.date === gameDate) {
         let finalPlayers = game.players || '';
         
-        // אם המשחק נוצר עכשיו ויש נתונים זמינים מהחלוקה הנוכחית
-        if (game.team1Raw && game.team2Raw) {
-          finalPlayers = winnerTeam === 'לבן' ? game.team1Raw.join(', ') : game.team2Raw.join(', ');
-        } else {
-          // למשחקים ישנים שכבר קיימים בגוגל שיטס: אם מחליפים מנצח, נבקש לעדכן את השמות
-          const promptPlayers = prompt(`החלפת מנצח לצוות ${winnerTeam}. אנא הזן את שמות השחקנים המנצחים (מופרדים בפסיק):`, game.players || '');
-          if (promptPlayers !== null) {
-            finalPlayers = promptPlayers;
-          }
+        // אם אין שחקנים רשומים למשחק הזה, או שמחליפים מנצח - נבקש מהמשתמש להזין שמות
+        const promptPlayers = prompt(
+          `נקבע ניצחון לקבוצה ה${winnerTeam}.\nאנא הזן או עדכן את שמות השחקנים המנצחים (מופרדים בפסיקים):`, 
+          game.players || ''
+        );
+        
+        if (promptPlayers !== null) {
+          finalPlayers = promptPlayers;
+        } else if (!game.players) {
+          return game; // אם לחץ ביטול ולא היו שחקנים קודם, לא נשנה כלום
         }
 
         return { 
@@ -1263,19 +1286,52 @@ function TabHistory({ history, onSave }) {
 
   return (
     <div>
-      <h3 style={{ marginBottom: '15px' }}>משחקים אחרונים במאגר ({history.length})</h3>
+      {/* --- תצוגת סטטיסטיקת שחקנים (החלק שנמחק) --- */}
+      <div style={{ background: '#1e1e1e', padding: '15px', borderRadius: '8px', marginBottom: '25px', border: '1px solid #ffb300' }}>
+        <h3 style={{ margin: '0 0 12px 0', color: '#ffb300', fontSize: '16px' }}>🏆 טבלת רייטינג וסטטיסטיקת ניצחונות</h3>
+        {statsArray.length === 0 ? (
+          <div style={{ color: '#aaa', fontSize: '13px' }}>אין עדיין נתוני משחקים לחישוב סטטיסטיקה.</div>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'right' }}>
+              <thead>
+                <tr style={{ borderBottom: '2px solid #444', color: '#aaa' }}>
+                  <th style={{ padding: '8px 4px' }}>שחקן</th>
+                  <th style={{ padding: '8px 4px', textAlign: 'center' }}>ניצחונות</th>
+                  <th style={{ padding: '8px 4px', textAlign: 'center' }}>משחקים</th>
+                </tr>
+              </thead>
+              <tbody>
+                {statsArray.map((player, index) => (
+                  <tr key={player.name} style={{ borderBottom: '1px solid #333', background: index % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent' }}>
+                    <td style={{ padding: '8px 4px', fontWeight: 'bold', color: '#fff' }}>{player.name}</td>
+                    <td style={{ padding: '8px 4px', textAlign: 'center', color: '#4caf50', fontWeight: 'bold' }}>{player.wins}</td>
+                    <td style={{ padding: '8px 4px', textAlign: 'center', color: '#ccc' }}>{player.games}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <hr style={{ border: '0', borderTop: '1px solid #444', marginBottom: '20px' }} />
+
+      {/* --- רשימת המשחקים האחרונים --- */}
+      <h3 style={{ marginBottom: '15px', fontSize: '15px' }}>משחקים אחרונים במאגר ({history.length})</h3>
+      
       {history.map(game => {
         const currentWinningPlayers = game.players ? String(game.players).split(',').map(s=>s.trim()).filter(Boolean) : [];
         
         return (
           <div key={game.date} style={{ background: '#2d2d2d', padding: '15px', borderRadius: '8px', marginBottom: '12px', border: '1px solid #444' }}>
-            <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>📅 תאריך: {game.date}</div>
+            <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#fff' }}>📅 תאריך: {game.date}</div>
             
             <div style={{ marginBottom: '10px' }}>
-              <span>סטטוס ניצחון: </span>
+              <span style={{ color: '#ccc' }}>סטטוס ניצחון: </span>
               {game.winner ? (
                 <span style={{ background: '#2e7d32', color: '#fff', padding: '3px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>
-                  🏆 {game.winner} ניצח
+                  🏆 קבוצה {game.winner} ניצחה
                 </span>
               ) : (
                 <span style={{ background: '#f57c00', color: '#fff', padding: '3px 8px', borderRadius: '4px', fontSize: '12px' }}>
@@ -1287,23 +1343,23 @@ function TabHistory({ history, onSave }) {
             {currentWinningPlayers.length > 0 && (
               <div style={{ background: '#1e1e1e', padding: '10px', borderRadius: '6px', marginBottom: '10px' }}>
                 <div style={{ fontSize: '11px', color: '#aaa', marginBottom: '4px', fontWeight: 'bold' }}>
-                  שחקנים שרשמו ניצחון (ממוצע רייטינג: {game.avg_score}):
+                  השחקנים המנצחים (ממוצע רייטינג: {game.avg_score || '0.00'}):
                 </div>
-                <div style={{ fontSize: '13px', color: '#fff', lineHeight: '1.4' }}>
+                <div style={{ fontSize: '13px', color: '#4caf50', lineHeight: '1.4', fontWeight: '500' }}>
                   {currentWinningPlayers.join(', ')}
                 </div>
               </div>
             )}
             
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
               <button 
-                style={{ flex: 1, padding: '6px', background: game.winner === 'לבן' ? '#2e7d32' : '#555', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                style={{ flex: 1, padding: '8px', background: game.winner === 'לבן' ? '#2e7d32' : '#555', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
                 onClick={() => handleWinner(game.date, 'לבן')}
               >
                 {game.winner === 'לבן' ? '🏆 לבן המנצח' : 'קבע ניצחון לבן'}
               </button>
               <button 
-                style={{ flex: 1, padding: '6px', background: game.winner === 'שחור' ? '#2e7d32' : '#555', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                style={{ flex: 1, padding: '8px', background: game.winner === 'שחור' ? '#2e7d32' : '#555', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
                 onClick={() => handleWinner(game.date, 'שחור')}
               >
                 {game.winner === 'שחור' ? '🏆 שחור המנצח' : 'קבע ניצחון שחור'}
