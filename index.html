@@ -636,28 +636,29 @@ function App() {
     setTimeout(()=>setMsg(null),ms);
   };
 
-  const handleSavePlayers = async (updatedPlayers) => {
-  setPlayers(updatedPlayers); // עדכון מיידי על המסך
+  const savePlayers = async (updatedPlayers) => {
+  if (typeof setPlayers === 'function') {
+    setPlayers(updatedPlayers); // עדכון מיידי על המסך
+  }
   try {
     await apiPost({ action: 'savePlayers', players: updatedPlayers });
-    alert('✅ מאגר השחקנים עודכן בהצלחה בגוגל שיטס!');
+    console.log('✅ מאגר השחקנים עודכן בגוגל שיטס');
   } catch (err) {
-    console.error(err);
+    console.error("שגיאה בסנכרון השחקנים לגוגל:", err);
   }
 };
 
-const handleSaveHistory = async (updatedHistory) => {
-  setHistory(updatedHistory); // עדכון מיידי על המסך
+const saveHistory = async (updatedHistory) => {
+  if (typeof setHistory === 'function') {
+    setHistory(updatedHistory); // עדכון מיידי על המסך
+  }
   try {
     await apiPost({ action: 'saveHistory', history: updatedHistory });
-    alert('✅ היסטוריית המשחקים עודכנה בגוגל שיטס!');
+    console.log('✅ היסטוריית המשחקים עודכנה בגוגל שיטס');
   } catch (err) {
-    console.error(err);
+    console.error("שגיאה בסנכרון ההיסטוריה לגוגל:", err);
   }
 };
-  // השורות שמצילות אותנו מהשגיאה:
-const savePlayers = handleSavePlayers;
-const saveHistory = handleSaveHistory;
   
   if (loading) return (
     <div className="app-wrap"><div className="loading"><div className="spinner"/><div>טוען נתונים...</div></div></div>
