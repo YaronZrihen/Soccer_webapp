@@ -259,7 +259,6 @@
 <div id="root"></div>
 <script type="text/babel">
 
-             
 const API = "https://script.google.com/macros/s/AKfycbwfrbSA6ReBwCud6Kf_MB1D9oBpxocghjLsud0aOZRaG_-PSW9mPEXU4axN0cH3LyHC/exec";
 const APP_URL = window.location.origin + window.location.pathname;
 const ADMIN_CODE = "2026";
@@ -577,7 +576,7 @@ function App() {
   const [history, setHistory]   = React.useState([]);
   const [loading, setLoading]   = React.useState(true);
   const [saving,  setSaving]    = React.useState(false);
-  const [msg,     setMsg]       = React.useState(null); // {type,text}
+  const [msg,      setMsg]       = React.useState(null); // {type,text}
 
   // Auth
   const [divAuth,   setDivAuth]   = React.useState(false);
@@ -665,10 +664,10 @@ function App() {
       {msg && <div className={`alert alert-${msg.type}`}>{msg.text}</div>}
       {saving && <div className="alert alert-info">⏳ שומר...</div>}
 
-      {tab==='divide'  && <TabDivide  players={players} history={history} auth={divAuth} onAuth={()=>setDivAuth(true)} onSaveHistory={saveHistory} showMsg={showMsg} />}
-      {tab==='roster'  && <TabRoster  players={players} history={history} auth={adminAuth} onAuth={()=>setAdminAuth(true)} onSave={savePlayers} showMsg={showMsg} />}
-      {tab==='update'  && <TabUpdate  players={players} tab3Auth={tab3Auth} setTab3Auth={setTab3Auth} adminAuth={adminAuth} onSave={savePlayers} showMsg={showMsg} />}
-      {tab==='history' && <TabHistory players={players} history={history} onSave={async(h)=>{await saveHistory(h); const updated=recalcWins(players,h); await savePlayers(updated);}} showMsg={showMsg} />}
+      {tab=='divide'   && <TabDivide  players={players} history={history} auth={divAuth} onAuth={()=>setDivAuth(true)} onSaveHistory={saveHistory} showMsg={showMsg} />}
+      {tab=='roster'   && <TabRoster  players={players} history={history} auth={adminAuth} onAuth={()=>setAdminAuth(true)} onSave={savePlayers} showMsg={showMsg} />}
+      {tab=='update'   && <TabUpdate  players={players} tab3Auth={tab3Auth} setTab3Auth={setTab3Auth} adminAuth={adminAuth} onSave={savePlayers} showMsg={showMsg} />}
+      {tab=='history' && <TabHistory players={players} history={history} onSave={async(h)=>{await saveHistory(h); const updated=recalcWins(players,h); await savePlayers(updated);}} showMsg={showMsg} />}
 
       <div className="tab-bar">
         {tabs.map(t=>(
@@ -703,7 +702,6 @@ function TabDivide({players, history, auth, onAuth, onSaveHistory, showMsg}) {
   const [gameDate, setGameDate]   = React.useState('');
   const [formation,setFormation]  = React.useState(null);
   const [showForm, setShowForm]   = React.useState(false);
-  const [fGk,setFGk]=[React.useState(1)[0],React.useState(1)[1]];
 
   if (!auth) return <PasswordScreen code={DIV_CODE} onSuccess={onAuth} title="כניסה לחלוקה" />;
 
@@ -777,13 +775,13 @@ function TabDivide({players, history, auth, onAuth, onSaveHistory, showMsg}) {
       {teams && (
         <>
           {/* סטטיסטיקה */}
-          <TeamStats t1={teams.t1} t2={teams.t2} />
+          <TeamStats p1={teams.t1} p2={teams.t2} t1={teams.t1} t2={teams.t2} />
 
           <TeamDisplay team={teams.t1} tk="t1" onSwap={i=>swapPlayer('t1','t2',i)} color="var(--white-team)" title="⚪ לבן" bg="var(--team-white,#1a3a2a)" />
           <TeamDisplay team={teams.t2} tk="t2" onSwap={i=>swapPlayer('t2','t1',i)} color="var(--black-team)" title="⚫ שחור" bg="#3a1a1a" />
 
           <button className="btn btn-secondary" style={{margin:'10px 0'}} onClick={()=>setShowField(!showField)}>
-            🏟️ {showField?'הסתר מגרש':'הצג מגרש'}
+            Stadium 🏟️ {showField?'הסתר מגרש':'הצג מגרש'}
           </button>
           {showField && <Field t1={teams.t1} t2={teams.t2} players={players} />}
 
@@ -811,41 +809,42 @@ function FormationInput({label,def}) {
   );
 }
 
+// ── קומפוננטות עזר לטאב חלוקה ──────────────────────────────────
+
 function TeamStats({t1,t2}) {
-  const diff = Math.abs(teamAvg(t1)-teamAvg(t2));
-  const dc   = diff<0.5?'var(--accent2)':diff<1?'var(--warn)':'var(--danger)';
-  const a1s  = (teamAvg(t1)).toFixed(1);
-  const a2s  = (teamAvg(t2)).toFixed(1);
-  const a1g  = t1.length ? (t1.reduce((a,p)=>a+p.age,0)/t1.length).toFixed(1) : '—';
-  const a2g  = t2.length ? (t2.reduce((a,p)=>a+p.age,0)/t2.length).toFixed(1) : '—';
+  const avg1 = teamAvg(t1);
+  const avg2 = teamAvg(t2);
+  const diff = Math.abs(avg1 - avg2).toFixed(2);
+  
   return (
-    <div className="card" style={{marginBottom:10}}>
-      <div style={{textAlign:'center',fontSize:13,color:dc,fontWeight:600,marginBottom:6}}>
-        פער בין קבוצות: {diff.toFixed(2)} | לבן: {t1.length} | שחור: {t2.length}
+    <div className="card" style={{ textAlign: 'center', marginBottom: 12 }}>
+      <div style={{ fontSize: 14, fontWeight: '700', marginBottom: 6 }}>מאזן כוחות</div>
+      <div className="stats-row">
+        <div>ממוצע לבן: <span style={{ color: 'var(--white-team)', fontWeight: '700' }}>{avg1.toFixed(1)}</span></div>
+        <div>ממוצע שחור: <span style={{ color: 'var(--black-team)', fontWeight: '700' }}>{avg2.toFixed(1)}</span></div>
       </div>
-      <div style={{display:'flex',justifyContent:'center',gap:20,fontSize:12}}>
-        <span style={{color:'var(--white-team)'}}>⚪ לבן — ציון: <b>{a1s}</b> | גיל: <b>{a1g}</b></span>
-        <span style={{color:'var(--muted)'}}>|</span>
-        <span style={{color:'var(--black-team)'}}>⚫ שחור — ציון: <b>{a2s}</b> | גיל: <b>{a2g}</b></span>
+      <div style={{ fontSize: 12, color: parseFloat(diff) <= 0.5 ? 'var(--accent2)' : 'var(--warn)', marginTop: 4 }}>
+        הפרש רמות: {diff} {parseFloat(diff) <= 0.5 ? '📊 חלוקה מאוזנת מצוין!' : '⚠️ מומלץ לערבב שוב'}
       </div>
     </div>
   );
 }
 
-function TeamDisplay({team,tk,onSwap,title,bg}) {
-  const avg    = teamAvg(team);
-  const ageAvg = team.length ? (team.reduce((a,p)=>a+p.age,0)/team.length).toFixed(1) : '—';
+function TeamDisplay({team, tk, onSwap, color, title, bg}) {
   return (
-    <div style={{marginBottom:10}}>
-      <div className="team-header" style={{background:bg}}>
-        {title} ({team.length}) <span style={{fontSize:13,fontWeight:400}}>| רמה {avg.toFixed(1)} | גיל {ageAvg}</span>
+    <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: 12 }}>
+      <div className="team-header" style={{ background: bg, color: color }}>
+        {title} ({team.length} שחקנים)
       </div>
-      {team.map((p,i)=>(
+      {team.map((p, idx) => (
         <div key={p.name} className="player-row">
-          <span><b>{p.name}</b> <span style={{color:'var(--muted)',fontSize:12}}>({p.age})</span></span>
-          <div style={{display:'flex',alignItems:'center',gap:8}}>
+          <div>
+            <span style={{ fontWeight: '600' }}>{p.name}</span>
+            <span style={{ fontSize: 11, color: 'var(--muted)', marginRight: 8 }}>({p.role})</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <span className={`score-badge ${scoreColor(p.score)}`}>{p.score.toFixed(1)}</span>
-            <button className="btn btn-secondary btn-sm" onClick={()=>onSwap(i)}>🔄</button>
+            <button className="btn btn-secondary btn-sm" onClick={() => onSwap(idx)}>העבר ⇄</button>
           </div>
         </div>
       ))}
@@ -853,104 +852,39 @@ function TeamDisplay({team,tk,onSwap,title,bg}) {
   );
 }
 
-// ── TAB: מאגר שחקנים ─────────────────────────────────────────
+// ── TAB: מאגר שחקנים ──────────────────────────────────────────
 
 function TabRoster({players, history, auth, onAuth, onSave, showMsg}) {
-  const [search,    setSearch]    = React.useState('');
-  const [showOff,   setShowOff]   = React.useState(false);
-  const [editPlayer,setEditPlayer]= React.useState(null);
+  const [search, setSearch] = React.useState('');
+  if (!auth) return <PasswordScreen code={ADMIN_CODE} onSuccess={onAuth} title="ניהול מערכת (מאגר)" />;
 
-  if (!auth) return <PasswordScreen code={ADMIN_CODE} onSuccess={onAuth} title="כניסה למנהל" />;
+  const filtered = players.filter(p => p.name.includes(search));
 
-  const genAllPins = async () => {
-    let changed=false;
-    const updated = players.map(p=>{
-      const phone=cleanPhone(p.phone), pin=cleanStr(p.pin);
-      if (phone&&!pin) { changed=true; return {...p,pin:String(1000+Math.floor(Math.random()*9000))}; }
-      return p;
-    });
-    if (changed) { await onSave(updated); showMsg('success','✅ PINים נוצרו'); }
-    else showMsg('info','כולם כבר קיבלו PIN');
-  };
-
-  const toggleActive = async (name) => {
-    const updated = players.map(p=>p.name===name?{...p,active:String(!isActive(p))}:p);
+  const toggleActive = async (player) => {
+    const updated = players.map(p => p.name === player.name ? { ...p, active: isActive(player) ? 'false' : 'true' } : p);
     await onSave(updated);
   };
 
-  const deletePlayer = async (name) => {
-    if (!window.confirm(`למחוק את ${name}?`)) return;
-    await onSave(players.filter(p=>p.name!==name));
-  };
-
-  const filtered = players
-    .filter(p=>(showOff||isActive(p))&&(!search||p.name.toLowerCase().includes(search.toLowerCase())))
-    .sort((a,b)=>a.name.split(' ')[0].localeCompare(b.name.split(' ')[0],'he'));
-
-  if (editPlayer) return (
-    <div>
-      <button className="btn btn-secondary" style={{marginBottom:12}} onClick={()=>setEditPlayer(null)}>← חזור למאגר</button>
-      <PlayerForm player={editPlayer} allPlayers={players}
-        onSave={async entry=>{
-          const updated=players.map(p=>p.name===editPlayer.name?entry:p);
-          await onSave(updated); setEditPlayer(null);
-        }} />
-    </div>
-  );
-
   return (
     <div>
-      <div style={{display:'flex',gap:8,marginBottom:12,alignItems:'center'}}>
-        <div style={{flex:1,fontSize:18,fontWeight:700}}>מאגר ({players.length})</div>
-        <button className="btn btn-secondary btn-sm" onClick={genAllPins}>🔑 צור PIN לכולם</button>
+      <div className="form-group" style={{ marginTop: 12 }}>
+        <input className="form-input" placeholder="🔍 חפש שחקן במאגר..." value={search} onChange={e => setSearch(e.target.value)} />
       </div>
-      <input className="form-input" placeholder="🔍 חפש שחקן..." value={search}
-        onChange={e=>setSearch(e.target.value)} style={{marginBottom:8}} />
-      <div className="toggle-wrap" style={{marginBottom:12}} onClick={()=>setShowOff(!showOff)}>
-        <div className={`toggle${showOff?' on':''}`}/>
-        <span style={{fontSize:13}}>הצג לא פעילים</span>
-      </div>
-
+      <div className="section-title">רשימת שחקנים ({filtered.length})</div>
       {filtered.map(p => {
-        const sr=selfRating(p), pr=peerAvg(p,players), ws=playerScore(p,players);
-        const wins=safeInt(p.win_points);
-        const games=history.filter(g=>(g.team1||[]).concat(g.team2||[]).includes(p.name)).length;
-        const phone=cleanPhone(p.phone), pin=cleanStr(p.pin);
-        const primary=String(p.primary_role||'').replace(/nan|none/i,'').trim();
-        const roles=safeSplit(p.roles).join(', ')||'לא הוגדר';
-
+        const score = playerScore(p, players);
+        const active = isActive(p);
         return (
-          <div key={p.name} className="card" style={{marginBottom:8}}>
-            <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:6}}>
-              <div>
-                <span style={{color:'var(--accent)',fontSize:12,marginLeft:6}}>#{cleanStr(p.player_num)}</span>
-                <b style={{fontSize:15}}>{p.name}</b>
-                <span style={{color:'var(--muted)',fontSize:12,marginRight:6}}> ({playerAge(p)})</span>
-                <span className={`badge ${isActive(p)?'badge-green':'badge-red'}`}>{isActive(p)?'פעיל':'לא פעיל'}</span>
-                {(wins>0||games>0)&&<span className="badge badge-yellow" style={{marginRight:6}}>🏆 {wins}/{games}</span>}
-              </div>
+          <div key={p.name} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <div style={{ fontWeight: '700' }}>{p.name} {active ? <span className="badge badge-green">פעיל</span> : <span className="badge badge-red">מוקפא</span>}</div>
+              <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>תפקיד: {getRole(p)} | גיל: {playerAge(p)}</div>
             </div>
-            <div style={{fontSize:12,color:'var(--muted)',marginBottom:6}}>
-              תפקידים: {roles}{primary?<b style={{color:'var(--warn)'}}> | ⭐ {primary}</b>:''}
-            </div>
-            <div style={{display:'flex',gap:12,fontSize:12,marginBottom:10,flexWrap:'wrap'}}>
-              <span>אישי: <b className={scoreColor(sr||0)} style={{color:sr>=7?'var(--white-team)':sr>=5?'var(--warn)':'var(--muted)'}}>{sr??'—'}</b></span>
-              <span>קבוצתי: <b style={{color:pr>=7?'var(--white-team)':pr>=5?'var(--warn)':'var(--muted)'}}>{pr??'—'}</b></span>
-              <span>משוכלל: <b className={scoreColor(ws)} style={{color:ws>=7?'var(--white-team)':ws>=5?'var(--warn)':'var(--muted)'}}>{ws.toFixed(1)}</b></span>
-            </div>
-            <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-              <button className="btn btn-secondary btn-sm" onClick={()=>toggleActive(p.name)}>
-                {isActive(p)?'🔴 השבת':'🟢 הפעל'}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span className={`score-badge ${scoreColor(score)}`}>{score.toFixed(1)}</span>
+              <button className={`btn btn-sm ${active ? 'btn-danger' : 'btn-success'}`} onClick={() => toggleActive(p)}>
+                {active ? 'הקפא' : 'הפעל'}
               </button>
-              <button className="btn btn-secondary btn-sm" onClick={()=>setEditPlayer(p)}>📝 ערוך</button>
-              {phone&&pin&&(
-                <button className="btn btn-wa btn-sm" onClick={()=>{
-                  const link=`${APP_URL}?player=${encodeURIComponent(p.name)}&pin=${pin}`;
-                  const msg=`שלום ${p.name.split(' ')[0]}! קישור: ${link} | קוד: ${pin}`;
-                  window.open(`https://wa.me/972${phone.replace(/^0/,'')}?text=${encodeURIComponent(msg)}`,'_blank');
-                }}>💬 WhatsApp</button>
-              )}
-              <button className="btn btn-danger btn-sm" onClick={()=>deletePlayer(p.name)}>🗑️</button>
             </div>
           </div>
         );
@@ -959,320 +893,151 @@ function TabRoster({players, history, auth, onAuth, onSave, showMsg}) {
   );
 }
 
-// ── TAB: עדכון / הרשמה ───────────────────────────────────────
+// ── TAB: עדכון פרטים ─────────────────────────────────────────
 
 function TabUpdate({players, tab3Auth, setTab3Auth, adminAuth, onSave, showMsg}) {
-  const [choice, setChoice] = React.useState('🆕 שחקן חדש');
-  const [loginName, setLoginName] = React.useState('');
-  const [loginPin,  setLoginPin]  = React.useState('');
-  const [loginErr,  setLoginErr]  = React.useState('');
+  const [selectedName, setSelectedName] = React.useState('');
+  const [pinInput, setPinInput] = React.useState('');
 
-  React.useEffect(()=>{ if (adminAuth&&!tab3Auth) setTab3Auth('__admin__'); },[adminAuth]);
-
-  if (!tab3Auth) return (
-    <div>
-      <div className="section-title">כניסה לעדכון פרטים</div>
-      <div className="form-group">
-        <label className="form-label">שם:</label>
-        <select className="form-select" value={loginName} onChange={e=>{setLoginName(e.target.value);setLoginErr('');}}>
-          <option value="">— בחר שחקן —</option>
-          {players.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
-        </select>
+  if (tab3Auth) {
+    const currentPlayer = players.find(p => p.name === tab3Auth);
+    return (
+      <div>
+        <button className="btn btn-secondary btn-sm" style={{ marginBottom: 12 }} onClick={() => setTab3Auth(null)}>← חזרה לבחירה</button>
+        <div className="section-title">עדכון פרטים עבור: {tab3Auth}</div>
+        <PlayerForm 
+          player={currentPlayer} 
+          allPlayers={players} 
+          onSave={async (updatedEntry) => {
+            const updatedList = players.map(p => p.name === tab3Auth ? updatedEntry : p);
+            await onSave(updatedList);
+          }} 
+        />
       </div>
-      <div className="form-group">
-        <label className="form-label">קוד PIN:</label>
-        <input className="form-input" type="password" maxLength={4} placeholder="4 ספרות"
-          value={loginPin} onChange={e=>{setLoginPin(e.target.value);setLoginErr('');}}
-          style={{letterSpacing:4,textAlign:'center'}} />
-      </div>
-      {loginErr && <div className="alert alert-error">{loginErr}</div>}
-      <button className="btn btn-primary" onClick={()=>{
-        if (!loginName||!loginPin) { setLoginErr('מלא שם וקוד'); return; }
-        const p = players.find(x=>x.name===loginName&&String(x.pin).trim()===loginPin.trim());
-        if (p) { setTab3Auth(loginName); setChoice(loginName); }
-        else setLoginErr('❌ שם או קוד שגוי');
-      }}>כנס →</button>
-    </div>
-  );
+    );
+  }
 
-  const isAdmin = tab3Auth==='__admin__';
-  const allOptions = ['🆕 שחקן חדש', ...players.map(p=>p.name).sort()];
-  const effectiveChoice = isAdmin ? choice : tab3Auth;
-  const pdata = players.find(p=>p.name===effectiveChoice)||null;
+  const handleLogin = () => {
+    const matched = players.find(p => p.name === selectedName && cleanStr(p.pin) === pinInput.trim());
+    if (matched) {
+      setTab3Auth(selectedName);
+    } else {
+      alert('❌ קוד PIN שגוי או שחקן לא נמצא');
+    }
+  };
 
   return (
-    <div>
-      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
-        <div>
-          {isAdmin ? <span className="badge badge-blue">👑 מנהל</span>
-                   : <span className="badge badge-green">👋 {tab3Auth}</span>}
-        </div>
-        <button className="btn btn-secondary btn-sm" onClick={()=>setTab3Auth(null)}>🚪 התנתק</button>
-      </div>
-
-      {isAdmin && (
+    <div style={{ marginTop: 12 }}>
+      <div className="card">
         <div className="form-group">
-          <label className="form-label">בחר שחקן:</label>
-          <select className="form-select" value={choice} onChange={e=>setChoice(e.target.value)}>
-            {allOptions.map(o=><option key={o} value={o}>{o}</option>)}
+          <label className="form-label">בחר שחקן לעדכון</label>
+          <select className="form-select" value={selectedName} onChange={e => setSelectedName(e.target.value)}>
+            <option value="">-- בחר שחקן --</option>
+            {players.map(p => <option key={p.name} value={p.name}>{p.name}</option>)}
           </select>
         </div>
-      )}
-
-      <PlayerForm
-        key={effectiveChoice}
-        player={pdata}
-        allPlayers={players}
-        onSave={async entry=>{
-          let updated;
-          if (pdata) updated=players.map(p=>p.name===pdata.name?entry:p);
-          else {
-            if (players.find(p=>p.name===entry.name)) { showMsg('error','שחקן עם שם זה כבר קיים'); return; }
-            updated=[...players,entry];
-          }
-          await onSave(updated);
-          showMsg('success',`✅ ${entry.name} נשמר`);
-          if (isAdmin) setChoice(entry.name);
-        }}
-      />
+        <div className="form-group">
+          <label className="form-label">קוד PIN אישי</label>
+          <input type="password" className="form-input" style={{ textAlign: 'center', letterSpacing: 4 }} value={pinInput} onChange={e => setPinInput(e.target.value)} />
+        </div>
+        <button className="btn btn-primary" onClick={handleLogin} disabled={!selectedName || !pinInput}>התחבר לעדכון פרטים</button>
+      </div>
     </div>
   );
 }
 
-// ── PlayerForm ────────────────────────────────────────────────
+// ── קומפוננטת טופס שחקן (משמש גם לקישורי ווצאפ) ─────────────────────
 
 function PlayerForm({player, allPlayers, onSave}) {
-  const ROLES = ["שוער","בלם","מגן ימין","מגן שמאל","קשר אחורי","קשר קדמי","אגף ימין","אגף שמאל","חלוץ"];
+  const [rating, setRating] = React.useState(selfRating(player) || 5);
+  const [role, setRole] = React.useState(getRole(player) || 'קשר אחורי');
+  const [birthYear, setBirthYear] = React.useState(player.birth_year || 1995);
+  const [saving, setSaving] = React.useState(false);
 
-  const initPrimary = () => {
-    const v=String(player?.primary_role||'').trim();
-    return v&&!['nan','none'].includes(v.toLowerCase())?v:'';
-  };
-
-  const [name,    setName]    = React.useState(player?.name||'');
-  const [phone,   setPhone]   = React.useState(cleanPhone(player?.phone)||'');
-  const [year,    setYear]    = React.useState(()=>{ const y=safeInt(player?.birth_year,1990); return Math.max(1950,Math.min(2015,y)); });
-  const [roles,   setRoles]   = React.useState(safeSplit(player?.roles)||[]);
-  const [primary, setPrimary] = React.useState(initPrimary());
-  const [rating,  setRating]  = React.useState(()=>{ const r=safeInt(player?.rating,0); return r>0?r:null; });
-  const [active,  setActive]  = React.useState(player?isActive(player):true);
-  const [peers,   setPeers]   = React.useState(()=>safeJson(player?.peer_ratings)||{});
-  const [errors,  setErrors]  = React.useState([]);
-  const [showPeers,setShowPeers]=React.useState(false);
-
-  const pin = cleanStr(player?.pin)||'';
-  const num = player&&String(player.player_num||'').match(/\d/)
-    ? safeInt(player.player_num) : allPlayers.length+1;
-
-  const toggleRole = r => {
-    setRoles(prev => {
-      const next = prev.includes(r)?prev.filter(x=>x!==r):[...prev,r];
-      if (!next.includes(primary)) setPrimary(next[0]||'');
-      return next;
-    });
-  };
-
-  const sr = selfRating(player||{}); const pr = peerAvg(player||{},allPlayers); const ws = playerScore(player||{},allPlayers);
-
-  const submit = async () => {
-    const errs=[];
-    if (!name.trim()) errs.push('שם מלא');
-    const ph=phone.replace(/[-\s]/g,'');
-    if (!ph) errs.push('מספר פלאפון');
-    else if (!/^\d{9,10}$/.test(ph)) errs.push('פלאפון לא תקין');
-    if (!roles.length) errs.push('תפקידים');
-    if (!rating) errs.push('ציון עצמי');
-    const unrated=Object.entries(peers).filter(([,v])=>!v).map(([k])=>k);
-    if (unrated.length&&allPlayers.length>1) errs.push(`דירוג חסר: ${unrated.join(', ')}`);
-    if (errs.length) { setErrors(errs); return; }
-
-    const newPin=pin||String(1000+Math.floor(Math.random()*9000));
-    const entry={
-      name:name.trim(), player_num:String(num), birth_year:String(year),
-      rating:String(rating), roles:roles.join(','), primary_role:primary||roles[0]||'',
-      peer_ratings:JSON.stringify(Object.fromEntries(Object.entries(peers).filter(([,v])=>v>0))),
-      active:String(active), phone:phone.trim(), pin:newPin,
-      win_points:String(safeInt(player?.win_points)),
+  const handleSubmit = async () => {
+    setSaving(true);
+    const updatedEntry = {
+      ...player,
+      rating: String(rating),
+      primary_role: role,
+      birth_year: String(birthYear)
     };
-    await onSave(entry);
-    setErrors([]);
+    await onSave(updatedEntry);
+    setSaving(false);
   };
-
-  const others = allPlayers.filter(p=>p.name!==(player?.name||'')).sort((a,b)=>a.name.split(' ')[0].localeCompare(b.name.split(' ')[0],'he'));
 
   return (
-    <div>
-      {/* ציונים */}
-      {player&&(
-        <div style={{display:'flex',gap:8,background:'var(--card)',borderRadius:10,padding:12,marginBottom:14}}>
-          {[['ציון אישי',sr],['קבוצתי',pr],['משוכלל',ws>0?ws:null]].map(([label,val])=>(
-            <div key={label} style={{flex:1,textAlign:'center'}}>
-              <div style={{fontSize:11,color:'var(--muted)',marginBottom:3}}>{label}</div>
-              <div style={{fontSize:22,fontWeight:700,color:val==null?'var(--muted)':val>=7?'var(--white-team)':val>=5?'var(--warn)':'var(--danger)'}}>
-                {val!=null?val.toFixed(1):'—'}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <div style={{color:'var(--muted)',fontSize:13,marginBottom:8}}>
-        מספר שחקן: <b style={{color:'var(--accent)'}}>#{num}</b>
-        {pin&&<span style={{marginRight:12}}>🔑 קוד: <b style={{color:'var(--accent)'}}>{pin}</b></span>}
-        {!pin&&player&&<span style={{color:'var(--warn)',marginRight:12,fontSize:12}}>🔑 PIN ייווצר בשמירה</span>}
+    <div className="card">
+      <RatingPills label="ציון עצמי (1-10)" value={rating} onChange={setRating} />
+      
+      <div className="form-group">
+        <label className="form-label">תפקיד ראשי</label>
+        <select className="form-select" value={role} onChange={e => setRole(e.target.value)}>
+          {Object.keys(ROLE_GROUPS).map(r => <option key={r} value={r}>{r}</option>)}
+        </select>
       </div>
 
       <div className="form-group">
-        <label className="form-label">שם מלא *</label>
-        <input className="form-input" value={name} onChange={e=>setName(e.target.value)} placeholder="הכנס שם מלא"/>
-      </div>
-      <div className="form-group">
-        <label className="form-label">מספר פלאפון *</label>
-        <input className="form-input" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="05X-XXXXXXX"/>
-      </div>
-      <div className="form-group">
-        <label className="form-label">שנת לידה *</label>
-        <input className="form-input" type="number" min={1950} max={2015} value={year}
-          onChange={e=>setYear(Math.max(1950,Math.min(2015,safeInt(e.target.value,1990))))}/>
+        <label className="form-label">שנת לידה</label>
+        <input type="number" className="form-input" value={birthYear} onChange={e => setBirthYear(e.target.value)} min={1960} max={2015} />
       </div>
 
-      <div className="form-group">
-        <label className="form-label">תפקידים *<br/><span style={{fontWeight:400,color:'var(--muted)'}}>בחר תפקידים, לאחר מכן בחר תפקיד עיקרי</span></label>
-        <div className="pills" style={{marginBottom:8}}>
-          {ROLES.map(r=>(
-            <div key={r} className={`pill${roles.includes(r)?' selected-green':''}`} onClick={()=>toggleRole(r)}>{r}</div>
-          ))}
-        </div>
-        {roles.length>0&&(
-          <div className="form-group">
-            <label className="form-label">⭐ תפקיד עיקרי</label>
-            <select className="form-select" value={primary} onChange={e=>setPrimary(e.target.value)}>
-              {roles.map(r=><option key={r} value={r}>{r}</option>)}
-            </select>
-          </div>
-        )}
-      </div>
-
-      <RatingPills value={rating} onChange={setRating} label="ציון עצמי (1-10) *"/>
-
-      <div className="toggle-wrap" style={{marginBottom:14}} onClick={()=>setActive(!active)}>
-        <div className={`toggle${active?' on':''}`}/>
-        <span style={{fontSize:13}}>שחקן פעיל</span>
-      </div>
-
-      <hr className="divider"/>
-      <div className="form-group">
-        <label className="form-label">דירוג עמיתים (חובה לכל שחקן)</label>
-        <button className="expander-btn" onClick={()=>setShowPeers(!showPeers)}>
-          <span>דרג {others.length} שחקנים</span><span>{showPeers?'▲':'▼'}</span>
-        </button>
-        {showPeers&&(
-          <div style={{marginTop:8}}>
-            {others.map(op=>(
-              <div key={op.name} style={{marginBottom:10}}>
-                <label className="form-label">{op.name}</label>
-                <div className="rating-pills">
-                  {[1,2,3,4,5,6,7,8,9,10].map(n=>(
-                    <div key={n} className={`rating-pill${peers[op.name]===n?' selected':''}`}
-                      onClick={()=>setPeers(prev=>({...prev,[op.name]:prev[op.name]===n?0:n}))}>
-                      {n}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {errors.length>0&&(
-        <div className="alert alert-error">❌ {errors.join(' | ')}</div>
-      )}
-      <button className="btn btn-primary" onClick={submit}>💾 שמור</button>
+      <button className="btn btn-success" onClick={handleSubmit} disabled={saving}>
+        {saving ? '⏳ שומר...' : '💾 שמור עדכון'}
+      </button>
     </div>
   );
 }
 
-// ── TAB: היסטוריה ────────────────────────────────────────────
+// ── TAB: היסטוריית משחקים ─────────────────────────────────────
 
 function TabHistory({players, history, onSave, showMsg}) {
-  const setWinner = async (date, winner) => {
-    const updated = history.map(g=>g.date===date?{...g,winner}:g);
-    await onSave(updated);
-    showMsg('success', winner?`🏆 ${winner} סומן כמנצח`:'↩ בחירה בוטלה');
+  const handleWinner = async (gameDate, winnerTeam) => {
+    const updatedHistory = history.map(game => {
+      if (game.date === gameDate) {
+        return { ...game, winner: winnerTeam };
+      }
+      return game;
+    });
+    await onSave(updatedHistory);
+    showMsg('success', `עודכן ניצחון לצוות ${winnerTeam}`);
   };
-
-  const pts = players
-    .filter(isActive)
-    .map(p=>{
-      const wins=safeInt(p.win_points);
-      const games=history.filter(g=>(g.team1||[]).concat(g.team2||[]).includes(p.name)).length;
-      const pct=games>0?Math.round(wins/games*100):0;
-      return {name:p.name,wins,games,pct};
-    })
-    .sort((a,b)=>b.pct-a.pct||b.wins-a.wins);
-  const maxWins=Math.max(1,...pts.map(r=>r.wins));
 
   return (
     <div>
-      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
-        <div className="section-title" style={{margin:0}}>היסטוריית משחקים</div>
-      </div>
-
-      {!history.length && <div className="alert alert-info">אין היסטוריה עדיין. שמור חלוקה מטאב החלוקה.</div>}
-
-      {history.map(game=>(
+      <div className="section-title">משחקים אחרונים ({history.length})</div>
+      {history.map(game => (
         <div key={game.date} className="game-card">
-          <div className="game-date">
-            📅 {game.date}
-            {game.winner&&<span className="badge badge-yellow" style={{marginRight:8}}>🏆 {game.winner}</span>}
-          </div>
+          <div className="game-date">📅 משחק בתאריך: {game.date}</div>
           <div className="game-teams">
             <div className="game-team">
-              <div className="game-team-name" style={{color:'var(--white-team)'}}>⚪ לבן — {game.avg1?.toFixed(1)}</div>
-              <div className="game-players">{(game.team1||[]).join(', ')||'—'}</div>
+              <div className="game-team-name" style={{ color: 'var(--white-team)' }}>⚪ לבן (ממוצע: {game.avg1})</div>
+              <div className="game-players">{(game.team1 || []).join(', ')}</div>
             </div>
             <div className="game-team">
-              <div className="game-team-name" style={{color:'var(--black-team)'}}>⚫ שחור — {game.avg2?.toFixed(1)}</div>
-              <div className="game-players">{(game.team2||[]).join(', ')||'—'}</div>
+              <div className="game-team-name" style={{ color: 'var(--black-team)' }}>⚫ שחור (ממוצע: {game.avg2})</div>
+              <div className="game-players">{(game.team2 || []).join(', ')}</div>
             </div>
           </div>
+          
           <div className="win-buttons">
-            <button className="btn btn-sm" style={{flex:1,background:game.winner==='לבן'?'#2563eb':'var(--surface)',color:'white',border:'1px solid var(--border)'}}
-              onClick={()=>setWinner(game.date,'לבן')}>🏆 לבן</button>
-            <button className="btn btn-sm" style={{flex:1,background:game.winner==='שחור'?'#2563eb':'var(--surface)',color:'white',border:'1px solid var(--border)'}}
-              onClick={()=>setWinner(game.date,'שחור')}>🏆 שחור</button>
-            {game.winner&&<button className="btn btn-secondary btn-sm" onClick={()=>setWinner(game.date,'')}>↩</button>}
+            <button className={`btn btn-sm ${game.winner === 'לבן' ? 'btn-success' : 'btn-secondary'}`} style={{ flex: 1 }} onClick={() => handleWinner(game.date, 'לבן')}>
+              {game.winner === 'לבן' ? '🏆 לבן ניצח' : 'קבע ניצחון לבן'}
+            </button>
+            <button className={`btn btn-sm ${game.winner === 'שחור' ? 'btn-success' : 'btn-secondary'}`} style={{ flex: 1 }} onClick={() => handleWinner(game.date, 'שחור')}>
+              {game.winner === 'שחור' ? '🏆 שחור ניצח' : 'קבע ניצחון שחור'}
+            </button>
           </div>
         </div>
       ))}
-
-      {pts.length>0&&(
-        <>
-          <hr className="divider"/>
-          <div className="section-title">🏅 טבלת ניצחונות</div>
-          {pts.map((row,i)=>{
-            const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}.`;
-            const pctColor=row.pct>=60?'var(--white-team)':row.pct>=40?'var(--warn)':'var(--muted)';
-            return (
-              <div key={row.name} className="lb-row">
-                <span style={{width:26,textAlign:'center'}}>{medal}</span>
-                <span style={{width:90,fontSize:13,overflow:'hidden',whiteSpace:'nowrap',textOverflow:'ellipsis'}}>{row.name}</span>
-                <div className="lb-bar-wrap"><div className="lb-bar" style={{width:`${row.wins/maxWins*100}%`}}/></div>
-                <span style={{fontSize:12,color:'var(--accent)',fontWeight:700,minWidth:40,textAlign:'left'}}>{row.wins}/{row.games}</span>
-                <span style={{fontSize:12,fontWeight:700,color:pctColor,minWidth:36,textAlign:'left'}}>{row.pct}%</span>
-              </div>
-            );
-          })}
-        </>
-      )}
     </div>
   );
 }
 
-// ── Render ────────────────────────────────────────────────────
+// ── רינדור האפליקציה ───────────────────────────────────────────
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
 </body>
 </html>
