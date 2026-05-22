@@ -344,11 +344,14 @@ async function apiFetch(action) {
   const r = await fetch(`${API}?action=${action}`);
   return r.json();
 }
+
 async function apiPost(body) {
   const r = await fetch(API, {
-    method:'POST',
+    method: 'POST',
     body: JSON.stringify(body),
-    headers:{'Content-Type':'application/json'}
+    headers: {
+      'Content-Type': 'text/plain;charset=utf-8'
+    }
   });
   return r.json();
 }
