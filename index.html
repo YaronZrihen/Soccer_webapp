@@ -744,17 +744,26 @@ function TabDivide({players, history, auth, onAuth, onSaveHistory, showMsg}) {
   };
 
   const saveGame = async () => {
-    if (!gameDate||!teams) return;
-    const existing = history.findIndex(g=>g.date===gameDate);
+    if (!gameDate || !teams) return;
+    const existing = history.findIndex(g => g.date === gameDate);
+    
+    const totalAvg = ((teamAvg(teams.t1) + teamAvg(teams.t2)) / 2).toFixed(2);
+
     const newGame = {
-      date:gameDate, team1:teams.t1.map(p=>p.name), team2:teams.t2.map(p=>p.name),
-      avg1:Math.round(teamAvg(teams.t1)*100)/100, avg2:Math.round(teamAvg(teams.t2)*100)/100,
-      winner: existing>=0 ? history[existing].winner : ''
+      date: gameDate,
+      team: '', 
+      players: existing >= 0 ? history[existing].players : '', // ישאר ריק עד שייבחר מנצח
+      avg_score: totalAvg,
+      winner: existing >= 0 ? history[existing].winner : '',
+      // שומרים זמנית בצד האתר את הקבוצות בשביל הבחירה בטאב היסטוריה
+      team1Raw: teams.t1.map(p=>p.name),
+      team2Raw: teams.t2.map(p=>p.name)
     };
-    const updated = existing>=0 ? history.map((g,i)=>i===existing?newGame:g) : [...history,newGame];
-    updated.sort((a,b)=>b.date.localeCompare(a.date));
+    
+    const updated = existing >= 0 ? history.map((g, i) => i === existing ? newGame : g) : [...history, newGame];
+    updated.sort((a, b) => b.date.localeCompare(a.date));
     await onSaveHistory(updated);
-    showMsg('success',`✅ חלוקה נשמרה לתאריך ${gameDate}`);
+    showMsg('success', `✅ חלוקה נשמרה. כעת עבור ללשונית היסטוריה כדי לקבוע מי הניצח!`);
   };
 
   return (
@@ -1210,80 +1219,67 @@ function PlayerForm({player, allPlayers, onSave}) {
 // ── TAB: היסטוריה ────────────────────────────────────────────
 
 function TabHistory({players, history, onSave, showMsg}) {
-  const setWinner = async (date, winner) => {
-    const updated = history.map(g=>g.date===date?{...g,winner}:g);
-    await onSave(updated);
-    showMsg('success', winner?`🏆 ${winner} סומן כמנצח`:'↩ בחירה בוטלה');
+  const handleWinner = async (gameDate, winnerTeam) => {
+    // מוצאים את המשחק הנוכחי מההיסטוריה או מהחלוקה הפעילה
+    const updatedHistory = history.map(game => {
+      if (game.date === gameDate) {
+        // אם המשחק מנוהל כרגע ויש לנו גישה לקבוצות המקוריות שלו:
+        // (הערה: הלוגיקה הזו תעבוד הכי טוב על משחקים שנשמרו מהטאב הנוכחי)
+        return { 
+          ...game, 
+          winner: winnerTeam,
+          // כאן נשמרים רק שחקני הקבוצה שניצחה לפי בחירת המשתמש
+          players: winnerTeam === 'לבן' ? (game.team1Raw || []).join(', ') : (game.team2Raw || []).join(', ')
+        };
+      }
+      return game;
+    });
+    await onSave(updatedHistory);
+    showMsg('success', `עודכן ניצחון לצוות ${winnerTeam} ושחקניו נשמרו במאגר!`);
   };
-
-  const pts = players
-    .filter(isActive)
-    .map(p=>{
-      const wins=safeInt(p.win_points);
-      const games=history.filter(g=>(g.team1||[]).concat(g.team2||[]).includes(p.name)).length;
-      const pct=games>0?Math.round(wins/games*100):0;
-      return {name:p.name,wins,games,pct};
-    })
-    .sort((a,b)=>b.pct-a.pct||b.wins-a.wins);
-  const maxWins=Math.max(1,...pts.map(r=>r.wins));
 
   return (
     <div>
-      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
-        <div className="section-title" style={{margin:0}}>היסטוריית משחקים</div>
-      </div>
-
-      {!history.length && <div className="alert alert-info">אין היסטוריה עדיין. שמור חלוקה מטאב החלוקה.</div>}
-
-      {history.map(game=>(
-        <div key={game.date} className="game-card">
-          <div className="game-date">
-            📅 {game.date}
-            {game.winner&&<span className="badge badge-yellow" style={{marginRight:8}}>🏆 {game.winner}</span>}
+      <div className="section-title">משחקים אחרונים ({history.length})</div>
+      {history.map(game => (
+        <div key={game.date} className="game-card" style={{ padding: '12px 14px' }}>
+          <div className="game-date">📅 משחק בתאריך: {game.date}</div>
+          
+          <div style={{ margin: '8px 0', fontSize: 13 }}>
+            <span style={{ color: 'var(--muted)' }}>סטטוס: </span>
+            {game.winner ? (
+              <span className="badge badge-green" style={{ fontSize: 12 }}>
+                🏆 קבוצה מנצחת: {game.winner}
+              </span>
+            ) : (
+              <span className="badge badge-yellow">טרם נקבע מנצח</span>
+            )}
           </div>
-          <div className="game-teams">
-            <div className="game-team">
-              <div className="game-team-name" style={{color:'var(--white-team)'}}>⚪ לבן — {game.avg1?.toFixed(1)}</div>
-              <div className="game-players">{(game.team1||[]).join(', ')||'—'}</div>
+
+          {game.winningPlayers && game.winningPlayers.length > 0 && (
+            <div style={{ background: 'var(--surface)', padding: 10, borderRadius: 6, marginBottom: 12 }}>
+              <div style={{ fontSize: 11, fontWeight: '700', color: 'var(--accent2)', marginBottom: 4 }}>
+                🏃‍♂️ השחקנים שרשמו ניצחון (רמה ממוצעת: {game.avg_score}):
+              </div>
+              <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.4 }}>
+                {game.winningPlayers.join(', ')}
+              </div>
             </div>
-            <div className="game-team">
-              <div className="game-team-name" style={{color:'var(--black-team)'}}>⚫ שחור — {game.avg2?.toFixed(1)}</div>
-              <div className="game-players">{(game.team2||[]).join(', ')||'—'}</div>
-            </div>
-          </div>
-          <div className="win-buttons">
-            <button className="btn btn-sm" style={{flex:1,background:game.winner==='לבן'?'#2563eb':'var(--surface)',color:'white',border:'1px solid var(--border)'}}
-              onClick={()=>setWinner(game.date,'לבן')}>🏆 לבן</button>
-            <button className="btn btn-sm" style={{flex:1,background:game.winner==='שחור'?'#2563eb':'var(--surface)',color:'white',border:'1px solid var(--border)'}}
-              onClick={()=>setWinner(game.date,'שחור')}>🏆 שחור</button>
-            {game.winner&&<button className="btn btn-secondary btn-sm" onClick={()=>setWinner(game.date,'')}>↩</button>}
+          )}
+          
+          <div className="win-buttons" style={{ padding: 0, marginTop: 8 }}>
+            <button className={`btn btn-sm ${game.winner === 'לבן' ? 'btn-success' : 'btn-secondary'}`} style={{ flex: 1 }} onClick={() => handleWinner(game.date, 'לבן')}>
+              {game.winner === 'לבן' ? '🏆 לבן ניצח' : 'קבע ניצחון לבן'}
+            </button>
+            <button className={`btn btn-sm ${game.winner === 'שחור' ? 'btn-success' : 'btn-secondary'}`} style={{ flex: 1 }} onClick={() => handleWinner(game.date, 'שחור')}>
+              {game.winner === 'שחור' ? '🏆 שחור ניצח' : 'קבע ניצחון שחור'}
+            </button>
           </div>
         </div>
       ))}
-
-      {pts.length>0&&(
-        <>
-          <hr className="divider"/>
-          <div className="section-title">🏅 טבלת ניצחונות</div>
-          {pts.map((row,i)=>{
-            const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}.`;
-            const pctColor=row.pct>=60?'var(--white-team)':row.pct>=40?'var(--warn)':'var(--muted)';
-            return (
-              <div key={row.name} className="lb-row">
-                <span style={{width:26,textAlign:'center'}}>{medal}</span>
-                <span style={{width:90,fontSize:13,overflow:'hidden',whiteSpace:'nowrap',textOverflow:'ellipsis'}}>{row.name}</span>
-                <div className="lb-bar-wrap"><div className="lb-bar" style={{width:`${row.wins/maxWins*100}%`}}/></div>
-                <span style={{fontSize:12,color:'var(--accent)',fontWeight:700,minWidth:40,textAlign:'left'}}>{row.wins}/{row.games}</span>
-                <span style={{fontSize:12,fontWeight:700,color:pctColor,minWidth:36,textAlign:'left'}}>{row.pct}%</span>
-              </div>
-            );
-          })}
-        </>
-      )}
     </div>
   );
 }
-
 // ── Render ────────────────────────────────────────────────────
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
