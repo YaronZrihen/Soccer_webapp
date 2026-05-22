@@ -655,6 +655,9 @@ const handleSaveHistory = async (updatedHistory) => {
     console.error(err);
   }
 };
+  // השורות שמצילות אותנו מהשגיאה:
+const savePlayers = handleSavePlayers;
+const saveHistory = handleSaveHistory;
   
   if (loading) return (
     <div className="app-wrap"><div className="loading"><div className="spinner"/><div>טוען נתונים...</div></div></div>
