@@ -346,12 +346,13 @@ async function apiFetch(action) {
   
   if (action === 'getHistory' && Array.isArray(data)) {
     return data.map(game => {
+      // גוגל מחזיר את העמודה players שלך כטקסט פשוט, נהפוך אותה למערך תצוגה
       const winningPlayers = game.players ? String(game.players).split(',').map(s=>s.trim()).filter(Boolean) : [];
-      
       return {
         date: game.date || '',
+        players: game.players || '', // שומר על הפורמט המקורי של הגוגל שיטס
         winningPlayers: winningPlayers,
-        avg_score: safeFloat(game.avg_score).toFixed(1),
+        avg_score: game.avg_score || '0.00',
         winner: game.winner || ''
       };
     });
@@ -364,18 +365,17 @@ async function apiPost(body) {
     await fetch(API, {
       method: 'POST',
       body: JSON.stringify(body),
-      mode: 'no-cors', 
-      headers: {
-        'Content-Type': 'text/plain;charset=utf-8'
-      }
+      mode: 'no-cors', // עוקף חסימות CORS לחלוטין
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }
     });
-    
     return { success: true };
   } catch (error) {
     console.error("שגיאה בשליחת הנתונים:", error);
     return { success: false, error: error.message };
   }
 }
+
+  
 // ── Team Division ─────────────────────────────────────────────
 
 const ROLE_GROUPS = {
@@ -636,25 +636,26 @@ function App() {
     setTimeout(()=>setMsg(null),ms);
   };
 
-  const savePlayers = async (updated) => {
-    setSaving(true);
-    try {
-      await apiPost({action:'savePlayers', players:updated});
-      setPlayers(updated);
-      showMsg('success','✅ נשמר בהצלחה');
-    } catch { showMsg('error','❌ שגיאה בשמירה'); }
-    setSaving(false);
-  };
+  const handleSavePlayers = async (updatedPlayers) => {
+  setPlayers(updatedPlayers); // עדכון מיידי על המסך
+  try {
+    await apiPost({ action: 'savePlayers', players: updatedPlayers });
+    alert('✅ מאגר השחקנים עודכן בהצלחה בגוגל שיטס!');
+  } catch (err) {
+    console.error(err);
+  }
+};
 
-  const saveHistory = async (updated) => {
-    setSaving(true);
-    try {
-      await apiPost({action:'saveHistory', history:updated});
-      setHistory(updated);
-    } catch { showMsg('error','❌ שגיאה בשמירה'); }
-    setSaving(false);
-  };
-
+const handleSaveHistory = async (updatedHistory) => {
+  setHistory(updatedHistory); // עדכון מיידי על המסך
+  try {
+    await apiPost({ action: 'saveHistory', history: updatedHistory });
+    alert('✅ היסטוריית המשחקים עודכנה בגוגל שיטס!');
+  } catch (err) {
+    console.error(err);
+  }
+};
+  
   if (loading) return (
     <div className="app-wrap"><div className="loading"><div className="spinner"/><div>טוען נתונים...</div></div></div>
   );
@@ -1227,68 +1228,90 @@ function PlayerForm({player, allPlayers, onSave}) {
 
 // ── TAB: היסטוריה ────────────────────────────────────────────
 
-function TabHistory({players, history, onSave, showMsg}) {
+function TabHistory({ history, onSave }) {
   const handleWinner = async (gameDate, winnerTeam) => {
-    // מוצאים את המשחק הנוכחי מההיסטוריה או מהחלוקה הפעילה
     const updatedHistory = history.map(game => {
       if (game.date === gameDate) {
-        // אם המשחק מנוהל כרגע ויש לנו גישה לקבוצות המקוריות שלו:
-        // (הערה: הלוגיקה הזו תעבוד הכי טוב על משחקים שנשמרו מהטאב הנוכחי)
+        let finalPlayers = game.players || '';
+        
+        // אם המשחק נוצר עכשיו ויש נתונים זמינים מהחלוקה הנוכחית
+        if (game.team1Raw && game.team2Raw) {
+          finalPlayers = winnerTeam === 'לבן' ? game.team1Raw.join(', ') : game.team2Raw.join(', ');
+        } else {
+          // למשחקים ישנים שכבר קיימים בגוגל שיטס: אם מחליפים מנצח, נבקש לעדכן את השמות
+          const promptPlayers = prompt(`החלפת מנצח לצוות ${winnerTeam}. אנא הזן את שמות השחקנים המנצחים (מופרדים בפסיק):`, game.players || '');
+          if (promptPlayers !== null) {
+            finalPlayers = promptPlayers;
+          }
+        }
+
         return { 
           ...game, 
           winner: winnerTeam,
-          // כאן נשמרים רק שחקני הקבוצה שניצחה לפי בחירת המשתמש
-          players: winnerTeam === 'לבן' ? (game.team1Raw || []).join(', ') : (game.team2Raw || []).join(', ')
+          players: finalPlayers
         };
       }
       return game;
     });
+    
     await onSave(updatedHistory);
-    showMsg('success', `עודכן ניצחון לצוות ${winnerTeam} ושחקניו נשמרו במאגר!`);
   };
 
   return (
     <div>
-      <div className="section-title">משחקים אחרונים ({history.length})</div>
-      {history.map(game => (
-        <div key={game.date} className="game-card" style={{ padding: '12px 14px' }}>
-          <div className="game-date">📅 משחק בתאריך: {game.date}</div>
-          
-          <div style={{ margin: '8px 0', fontSize: 13 }}>
-            <span style={{ color: 'var(--muted)' }}>סטטוס: </span>
-            {game.winner ? (
-              <span className="badge badge-green" style={{ fontSize: 12 }}>
-                🏆 קבוצה מנצחת: {game.winner}
-              </span>
-            ) : (
-              <span className="badge badge-yellow">טרם נקבע מנצח</span>
-            )}
-          </div>
-
-          {game.winningPlayers && game.winningPlayers.length > 0 && (
-            <div style={{ background: 'var(--surface)', padding: 10, borderRadius: 6, marginBottom: 12 }}>
-              <div style={{ fontSize: 11, fontWeight: '700', color: 'var(--accent2)', marginBottom: 4 }}>
-                🏃‍♂️ השחקנים שרשמו ניצחון (רמה ממוצעת: {game.avg_score}):
-              </div>
-              <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.4 }}>
-                {game.winningPlayers.join(', ')}
-              </div>
+      <h3 style={{ marginBottom: '15px' }}>משחקים אחרונים במאגר ({history.length})</h3>
+      {history.map(game => {
+        const currentWinningPlayers = game.players ? String(game.players).split(',').map(s=>s.trim()).filter(Boolean) : [];
+        
+        return (
+          <div key={game.date} style={{ background: '#2d2d2d', padding: '15px', borderRadius: '8px', marginBottom: '12px', border: '1px solid #444' }}>
+            <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>📅 תאריך: {game.date}</div>
+            
+            <div style={{ marginBottom: '10px' }}>
+              <span>סטטוס ניצחון: </span>
+              {game.winner ? (
+                <span style={{ background: '#2e7d32', color: '#fff', padding: '3px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>
+                  🏆 {game.winner} ניצח
+                </span>
+              ) : (
+                <span style={{ background: '#f57c00', color: '#fff', padding: '3px 8px', borderRadius: '4px', fontSize: '12px' }}>
+                  טרם נקבע מנצח
+                </span>
+              )}
             </div>
-          )}
-          
-          <div className="win-buttons" style={{ padding: 0, marginTop: 8 }}>
-            <button className={`btn btn-sm ${game.winner === 'לבן' ? 'btn-success' : 'btn-secondary'}`} style={{ flex: 1 }} onClick={() => handleWinner(game.date, 'לבן')}>
-              {game.winner === 'לבן' ? '🏆 לבן ניצח' : 'קבע ניצחון לבן'}
-            </button>
-            <button className={`btn btn-sm ${game.winner === 'שחור' ? 'btn-success' : 'btn-secondary'}`} style={{ flex: 1 }} onClick={() => handleWinner(game.date, 'שחור')}>
-              {game.winner === 'שחור' ? '🏆 שחור ניצח' : 'קבע ניצחון שחור'}
-            </button>
+
+            {currentWinningPlayers.length > 0 && (
+              <div style={{ background: '#1e1e1e', padding: '10px', borderRadius: '6px', marginBottom: '10px' }}>
+                <div style={{ fontSize: '11px', color: '#aaa', marginBottom: '4px', fontWeight: 'bold' }}>
+                  שחקנים שרשמו ניצחון (ממוצע רייטינג: {game.avg_score}):
+                </div>
+                <div style={{ fontSize: '13px', color: '#fff', lineHeight: '1.4' }}>
+                  {currentWinningPlayers.join(', ')}
+                </div>
+              </div>
+            )}
+            
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button 
+                style={{ flex: 1, padding: '6px', background: game.winner === 'לבן' ? '#2e7d32' : '#555', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                onClick={() => handleWinner(game.date, 'לבן')}
+              >
+                {game.winner === 'לבן' ? '🏆 לבן המנצח' : 'קבע ניצחון לבן'}
+              </button>
+              <button 
+                style={{ flex: 1, padding: '6px', background: game.winner === 'שחור' ? '#2e7d32' : '#555', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                onClick={() => handleWinner(game.date, 'שחור')}
+              >
+                {game.winner === 'שחור' ? '🏆 שחור המנצח' : 'קבע ניצחון שחור'}
+              </button>
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
+  
 // ── Render ────────────────────────────────────────────────────
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
