@@ -973,9 +973,9 @@ function TabRoster({players, history, auth, onAuth, onSave, showMsg}) {
           <div key={p.name} className="card" style={{marginBottom:8}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:6}}>
               <div>
-                <span style={{color:'var(--accent)',fontSize:12,marginLeft:6}}>#{cleanStr(p.player_num)}</span>
-                <b style={{fontSize:15}}>{p.name}</b>
-                <span style={{color:'var(--muted)',fontSize:12,marginRight:6}}> ({playerAge(p)})</span>
+                <span style={{color:'var(--accent)',fontSize:14,marginLeft:6}}>#{cleanStr(p.player_num)}</span>
+                <b style={{fontSize:16}}>{p.name}</b>
+                <span style={{color:'var(--muted)',fontSize:14,marginRight:6}}> ({playerAge (p)})</span>
                 <span className={`badge ${isActive(p)?'badge-green':'badge-red'}`}>{isActive(p)?'פעיל':'לא פעיל'}</span>
                 {(wins>0||games>0)&&<span className="badge badge-yellow" style={{marginRight:6}}>🏆 {wins}/{games}</span>}
               </div>
