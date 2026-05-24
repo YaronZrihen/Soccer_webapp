@@ -522,7 +522,7 @@ function Field({t1,t2}) {
 
   return (
     <div>
-      <div style={{display:'flex',gap:8,justifyContent:'center',marginBottom:8,fontSize:12}}>
+      <div style={{display:'flex',gap:8,justifyContent:'center',marginBottom:8,fontSize:14}}>
         <span style={{background:'#4ade80',color:'#111',borderRadius:6,padding:'4px 12px',fontWeight:700}}>⚪ לבן — תחתון</span>
         <span style={{background:'#f87171',color:'#111',borderRadius:6,padding:'4px 12px',fontWeight:700}}>⚫ שחור — עליון</span>
       </div>
@@ -870,10 +870,10 @@ function TeamStats({t1,t2}) {
   const a2g  = t2.length ? (t2.reduce((a,p)=>a+p.age,0)/t2.length).toFixed(1) : '—';
   return (
     <div className="card" style={{marginBottom:10}}>
-      <div style={{textAlign:'center',fontSize:13,color:dc,fontWeight:600,marginBottom:6}}>
+      <div style={{textAlign:'center',fontSize:14,color:dc,fontWeight:600,marginBottom:6}}>
         פער בין קבוצות: {diff.toFixed(2)} | לבן: {t1.length} | שחור: {t2.length}
       </div>
-      <div style={{display:'flex',justifyContent:'center',gap:20,fontSize:12}}>
+      <div style={{display:'flex',justifyContent:'center',gap:20,fontSize:14}}>
         <span style={{color:'var(--white-team)'}}>⚪ לבן — ציון: <b>{a1s}</b> | גיל: <b>{a1g}</b></span>
         <span style={{color:'var(--muted)'}}>|</span>
         <span style={{color:'var(--black-team)'}}>⚫ שחור — ציון: <b>{a2s}</b> | גיל: <b>{a2g}</b></span>
@@ -892,7 +892,7 @@ function TeamDisplay({team,tk,onSwap,title,bg}) {
       </div>
       {team.map((p,i)=>(
         <div key={p.name} className="player-row">
-          <span><b>{p.name}</b> <span style={{color:'var(--muted)',fontSize:12}}>({p.age})</span></span>
+          <span><b>{p.name}</b> <span style={{color:'var(--muted)',fontSize:14}}>({p.age})</span></span>
           <div style={{display:'flex',alignItems:'center',gap:8}}>
             <span className={`score-badge ${scoreColor(p.score)}`}>{p.score.toFixed(1)}</span>
             <button className="btn btn-secondary btn-sm" onClick={()=>onSwap(i)}>🔄</button>
@@ -983,7 +983,7 @@ function TabRoster({players, history, auth, onAuth, onSave, showMsg}) {
             <div style={{fontSize:14,color:'var(--muted)',marginBottom:6}}>
               תפקידים: {roles}{primary?<b style={{color:'var(--warn)'}}> | ⭐ {primary}</b>:''}
             </div>
-            <div style={{display:'flex',gap:12,fontSize:12,marginBottom:10,flexWrap:'wrap'}}>
+            <div style={{display:'flex',gap:12,fontSize:14,marginBottom:10,flexWrap:'wrap'}}>
               <span>אישי: <b className={scoreColor(sr||0)} style={{color:sr>=7?'var(--white-team)':sr>=5?'var(--warn)':'var(--muted)'}}>{sr??'—'}</b></span>
               <span>קבוצתי: <b style={{color:pr>=7?'var(--white-team)':pr>=5?'var(--warn)':'var(--muted)'}}>{pr??'—'}</b></span>
               <span>משוכלל: <b className={scoreColor(ws)} style={{color:ws>=7?'var(--white-team)':ws>=5?'var(--warn)':'var(--muted)'}}>{ws.toFixed(1)}</b></span>
@@ -1169,7 +1169,7 @@ function PlayerForm({player, allPlayers, onSave}) {
       <div style={{color:'var(--muted)',fontSize:13,marginBottom:8}}>
         מספר שחקן: <b style={{color:'var(--accent)'}}>#{num}</b>
         {pin&&<span style={{marginRight:12}}>🔑 קוד: <b style={{color:'var(--accent)'}}>{pin}</b></span>}
-        {!pin&&player&&<span style={{color:'var(--warn)',marginRight:12,fontSize:12}}>🔑 PIN ייווצר בשמירה</span>}
+        {!pin&&player&&<span style={{color:'var(--warn)',marginRight:12,fontSize:14}}>🔑 PIN ייווצר בשמירה</span>}
       </div>
 
       <div className="form-group">
