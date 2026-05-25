@@ -270,6 +270,25 @@
 </head>
 <body>
 
+<div id="fixedVersionBanner" style="
+position:fixed;
+top:12px;
+left:12px;
+background:#000;
+color:#fff;
+padding:10px 16px;
+border-radius:12px;
+font-size:14px;
+font-weight:700;
+z-index:2147483647;
+box-shadow:0 4px 14px rgba(0,0,0,.35);
+font-family:Arial,sans-serif;
+pointer-events:none;
+">
+v1.3.1
+</div>
+
+
 <div id="root">
 <div style={{
 position:'fixed',
@@ -284,7 +303,7 @@ fontWeight:'bold',
 zIndex:99999,
 boxShadow:'0 2px 10px rgba(0,0,0,0.3)'
 }}>
-גרסה v1.3.0
+גרסה v1.3.1
 </div>
 </div>
 <script type="text/babel">
@@ -858,7 +877,14 @@ function TabDivide({players, history, auth, onAuth, onSaveHistory, showMsg}) {
           <hr className="divider" />
           <div className="form-group">
             <label className="form-label">תאריך המשחק</label>
-            <input type="date" className="form-input" value={gameDate} onChange={e=>setGameDate(e.target.value)} />
+            <input type="date"
+style={{
+background:"#fff",
+color:"#000",
+border:"1px solid #ccc",
+padding:"8px",
+borderRadius:"8px"
+}} className="form-input" value={gameDate} onChange={e=>setGameDate(e.target.value)} />
           </div>
           <button className="btn btn-success" onClick={saveGame} disabled={!gameDate}>💾 שמור חלוקה להיסטוריה</button>
           <div style={{height:40}}/>
@@ -1306,6 +1332,11 @@ function TabHistory({ history, onSave }) {
         return { 
           ...game, 
           winner: winnerTeam,
+          team_white: game.team_white || '',
+          team_black: game.team_black || '',
+          players_white: game.players_white || '',
+          players_black: game.players_black || '',
+          losing_players: game.losing_players || '',
           players: finalPlayers
         };
       }
