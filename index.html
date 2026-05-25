@@ -276,7 +276,8 @@
 const API = "https://script.google.com/macros/s/AKfycbxsVMXN1kRKOmRnAJiyMhG__Wua0To6E3NOYu5e2-O0K6WTGH77L8T_Q6NrC2Z-4dso/exec";
 const APP_URL = window.location.origin + window.location.pathname;
 const ADMIN_CODE = "2026";
-const DIV_CODE   = "1122";
+const APP_VERSION = "v1.3.0";
+const DIV_CODE = localStorage.getItem("DIV_CODE") || "1122";
 
 // ── Helpers ──────────────────────────────────────────────────
 
@@ -378,7 +379,7 @@ async function apiPost(body) {
     await fetch(API, {
       method: 'POST',
       body: JSON.stringify(body),
-      mode: 'no-cors', // עוקף חסימות CORS לחלוטין
+      mode: 'no-cors', // זמני לצורך עבודה מול Google Apps Script
       headers: { 'Content-Type': 'text/plain;charset=utf-8' }
     });
     return { success: true };
@@ -729,7 +730,7 @@ function recalcWins(players, history) {
   const wins = {};
   history.forEach(game => {
     if (!game.winner) return;
-    const winners = game.winner==='לבן' ? game.team1 : game.team2;
+    const winners = game.winner==='לבן' ? game.team_white : game.team_black;
     (winners||[]).forEach(name => { wins[name]=(wins[name]||0)+1; });
   });
   return players.map(p => ({...p, win_points: String(wins[p.name]||0)}));
@@ -741,7 +742,7 @@ function TabDivide({players, history, auth, onAuth, onSaveHistory, showMsg}) {
   const [selected, setSelected]   = React.useState([]);
   const [teams,    setTeams]       = React.useState(null); // {t1,t2}
   const [showField,setShowField]  = React.useState(false);
-  const [gameDate, setGameDate]   = React.useState('');
+  const [gameDate, setGameDate]   = React.useState(new Date().toISOString().split("T")[0]);
   const [formation,setFormation]  = React.useState(null);
   const [showForm, setShowForm]   = React.useState(false);
   const [fGk,setFGk]=[React.useState(1)[0],React.useState(1)[1]];
@@ -783,8 +784,8 @@ function TabDivide({players, history, auth, onAuth, onSaveHistory, showMsg}) {
       avg_score: totalAvg,
       winner: existing >= 0 ? history[existing].winner : '',
       // שומרים זמנית בצד האתר את הקבוצות בשביל הבחירה בטאב היסטוריה
-      team1Raw: teams.t1.map(p=>p.name),
-      team2Raw: teams.t2.map(p=>p.name)
+      team_whiteRaw: teams.t1.map(p=>p.name),
+      team_blackRaw: teams.t2.map(p=>p.name)
     };
     
     const updated = existing >= 0 ? history.map((g, i) => i === existing ? newGame : g) : [...history, newGame];
@@ -964,7 +965,7 @@ function TabRoster({players, history, auth, onAuth, onSave, showMsg}) {
       {filtered.map(p => {
         const sr=selfRating(p), pr=peerAvg(p,players), ws=playerScore(p,players);
         const wins=safeInt(p.win_points);
-        const games=history.filter(g=>(g.team1||[]).concat(g.team2||[]).includes(p.name)).length;
+        const games=history.filter(g=>(g.team_white||[]).concat(g.team_black||[]).includes(p.name)).length;
         const phone=cleanPhone(p.phone), pin=cleanStr(p.pin);
         const primary=String(p.primary_role||'').replace(/nan|none/i,'').trim();
         const roles=safeSplit(p.roles).join(', ')||'לא הוגדר';
@@ -1337,8 +1338,8 @@ function TabHistory({ history, onSave }) {
         const currentWinningPlayers = game.players ? String(game.players).split(',').map(s=>s.trim()).filter(Boolean) : [];
         
         return (
-          <div key={game.date} style={{ background: '#2d2d2d', padding: '15px', borderRadius: '8px', marginBottom: '12px', border: '1px solid #444' }}>
-            <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#fff' }}>📅 תאריך: {game.date}</div>
+          <div key={new Date(game.date).toLocaleDateString('he-IL')} style={{ background: '#2d2d2d', padding: '15px', borderRadius: '8px', marginBottom: '12px', border: '1px solid #444' }}>
+            <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#fff' }}>📅 תאריך: {new Date(game.date).toLocaleDateString('he-IL')}</div>
             
             <div style={{ marginBottom: '10px' }}>
               <span style={{ color: '#ccc' }}>סטטוס ניצחון: </span>
