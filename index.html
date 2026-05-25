@@ -266,9 +266,30 @@
       .app-header h1 { font-size: 24px; }
       .tab-btn { font-size: 11px; padding: 12px 4px 8px; } /* אופטימיזציה לסרגל התחתון בנייד */
     }
-  </style>
+  
+input[type="date"]{
+  background:#fff !important;
+  color:#000 !important;
+}
+
+</style>
 </head>
 <body>
+<div id="appVersion" style="
+position:fixed;
+top:10px;
+left:10px;
+z-index:99999;
+background:#111;
+color:#fff;
+padding:6px 12px;
+border-radius:8px;
+font-size:12px;
+font-weight:bold;
+box-shadow:0 2px 8px rgba(0,0,0,0.3);
+">
+v1.3.2
+</div>
 
 <div id="fixedVersionBanner" style="
 position:fixed;
@@ -412,13 +433,19 @@ async function apiFetch(action) {
 
 async function apiPost(body) {
   try {
-    await fetch(API, {
+    const response = await fetch(API, {
       method: 'POST',
-      body: JSON.stringify(body),
-      mode: 'no-cors', // זמני לצורך עבודה מול Google Apps Script
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
     });
-    return { success: true };
+
+    const text = await response.text();
+
+    console.log('API RESPONSE:', text);
+
+    return JSON.parse(text);
   } catch (error) {
     console.error("שגיאה בשליחת הנתונים:", error);
     return { success: false, error: error.message };
