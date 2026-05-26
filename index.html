@@ -832,15 +832,24 @@ function TabDivide({players, history, auth, onAuth, onSaveHistory, showMsg}) {
     const totalAvg = ((teamAvg(teams.t1) + teamAvg(teams.t2)) / 2).toFixed(2);
 
     const newGame = {
-      date: gameDate,
-      team: '', 
-      players: existing >= 0 ? history[existing].players : '', // ישאר ריק עד שייבחר מנצח
-      avg_score: totalAvg,
-      winner: existing >= 0 ? history[existing].winner : '',
-      // שומרים זמנית בצד האתר את הקבוצות בשביל הבחירה בטאב היסטוריה
-      team_whiteRaw: teams.t1.map(p=>p.name),
-      team_blackRaw: teams.t2.map(p=>p.name)
-    };
+  date: selectedDate,
+
+  whiteTeam: "לבן",
+  blackTeam: "שחור",
+
+  whitePlayers: team1.map(p => p.name).join(", "),
+  blackPlayers: team2.map(p => p.name).join(", "),
+
+  winners:
+    winner === 1
+      ? team1.map(p => p.name).join(", ")
+      : team2.map(p => p.name).join(", "),
+
+  losers:
+    winner === 1
+      ? team2.map(p => p.name).join(", ")
+      : team1.map(p => p.name).join(", ")
+};
     
     const updated = existing >= 0 ? history.map((g, i) => i === existing ? newGame : g) : [...history, newGame];
     updated.sort((a, b) => b.date.localeCompare(a.date));
