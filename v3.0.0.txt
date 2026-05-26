@@ -1,0 +1,1487 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>⚽ ניהול כדורגל 2026</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0a0e1a;
+      --surface:   #111827;
+      --card:      #1a2234;
+      --border:    #2a3a52;
+      --text:      #e8eef8;
+      --muted:     #e8eef8;
+      --accent:    #3b7ff5;
+      --accent2:   #22d3a0;
+      --white-team:#4ade80;
+      --black-team:#f87171;
+      --warn:      #f59e0b;
+      --danger:    #ef4444;
+      --radius:    10px;
+      --font:      'Heebo', sans-serif;
+    }
+
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font); direction: rtl; }
+
+    #root { min-height: 100vh; }
+
+    /* ── Layout ── */
+    .app-wrap { max-width: 680px; margin: 0 auto; padding: 0 12px 80px; }
+
+    /* ── Header ── */
+    .app-header {
+      text-align: center;
+      padding: 22px 0 8px;
+    }
+    .app-header h1 {
+      font-size: 26px; font-weight: 900; letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #3b7ff5, #22d3a0);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+
+    /* ── Tab bar ── */
+    .tab-bar {
+      position: fixed; bottom: 0; right: 0; left: 0; z-index: 100;
+      display: flex; background: #0d1424;
+      border-top: 1px solid var(--border);
+      max-width: 680px; margin: 0 auto;
+    }
+    .tab-btn {
+      flex: 1; padding: 10px 4px 8px; border: none; background: none;
+      color: var(--muted); font-family: var(--font); font-size: 16px;
+      cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px;
+      transition: color 0.2s;
+    }
+    .tab-btn.active { color: var(--accent); }
+    .tab-btn .icon { font-size: 20px; line-height: 1; }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 14px; margin-bottom: 10px;
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      width: 100%; padding: 13px 16px; border-radius: 8px; border: none; /* הגדלת ריפוד ללחיצה קלה בנייד */
+      font-family: var(--font); font-size: 16px; font-weight: 600; /* הגדלת פונט כפתורים ל-16px */
+      cursor: pointer; transition: all 0.15s; display: flex; align-items: center;
+      justify-content: center; gap: 6px;
+    }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-primary:hover { background: #2d6ee0; }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { border-color: var(--accent); }
+    .btn-success { background: #16a34a; color: white; }
+    .btn-danger  { background: #7f1d1d; color: white; }
+    .btn-sm { padding: 5px 12px; font-size: 14px; width: auto; } /* הגדלת כפתורים קטנים */
+    .btn-wa { background: #25d37f; color: white; } /* שינוי לירוק וואטסאפ עדין ורענן */
+
+    /* ── Pills ── */
+    .pills { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+    .pill {
+      padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); /* התאמה לסלולאר */
+      background: var(--surface); color: var(--muted); font-size: 14px;
+      cursor: pointer; transition: all 0.15s; user-select: none;
+    }
+    .pill.selected { background: var(--accent); color: white; border-color: var(--accent); }
+    .pill.selected-green { background: var(--white-team); color: #111; border-color: var(--white-team); }
+
+    /* ── Form ── */
+    .form-group { margin-bottom: 14px; }
+    .form-label { font-size: 14px; color: var(--muted); margin-bottom: 5px; display: block; }
+    .form-input {
+      width: 100%; padding: 12px 14px; border-radius: 8px; /* הגדלת השדות למניעת זום אוטומטי מעצבן באייפון */
+      border: 1px solid var(--border); background: var(--surface);
+      color: var(--text); font-family: var(--font); font-size: 16px; /* חובה 16px בנייד */
+      outline: none; transition: border-color 0.2s;
+    }
+    .form-input:focus { border-color: var(--accent); }
+    .form-select {
+      width: 100%; padding: 12px 14px; border-radius: 8px;
+      border: 1px solid var(--border); background: var(--surface);
+      color: var(--text); font-family: var(--font); font-size: 16px; /* חובה 16px בנייד */
+      outline: none; cursor: pointer;
+    }
+
+    /* ── Rating pills 1-10 ── */
+    .rating-pills { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+    .rating-pill {
+      width: 40px; height: 40px; border-radius: 8px; border: 1px solid var(--border); /* הגדלה קלה לטאץ' נוח */
+      background: var(--surface); color: var(--muted); font-size: 14px; font-weight: 600;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+    .rating-pill.selected { background: var(--accent); color: white; border-color: var(--accent); }
+
+    /* ── Team cards ── */
+    .team-header {
+      padding: 10px 14px; border-radius: 8px 8px 0 0;
+      font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 8px;
+    }
+    .team-white { background: #1a3a2a; }
+    .team-black { background: #3a1a1a; }
+    .player-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 14px; background: var(--surface); /* רווח גדול יותר שיראה טוב בסלולאר */
+      border-bottom: 1px solid var(--border); font-size: 16px; /* פונט 16px לקריאות בנייד */
+    }
+    .player-row:last-child { border-bottom: none; border-radius: 0 0 8px 8px; }
+
+    /* ── הוספת מרווח בין הגיל לפעיל (והתאמת פונטים כללית למאגר) ── */
+    .player-row span {
+      display: inline-flex;
+      align-items: center;
+    }
+    
+    /* מזהה את אלמנט הסטטוס/הבאדג' אחרי הגיל ונותן לו מרחק קבוע שמאלה בדירקשן RTL */
+    .player-row .badge, 
+    .player-row span[class*="badge"],
+    .player-row span:has(.badge) {
+      margin-right: 15px !important; 
+    }
+
+    /* ── Score badge ── */
+    .score-badge {
+      font-size: 14px; font-weight: 700; padding: 3px 8px;
+      border-radius: 5px; background: var(--card);
+    }
+    .score-hi  { color: var(--white-team); }
+    .score-mid { color: var(--warn); }
+    .score-lo  { color: var(--muted); }
+
+    /* ── Stats row ── */
+    .stats-row {
+      display: flex; justify-content: center; gap: 20px;
+      font-size: 14px; padding: 8px 0;
+    }
+
+    /* ── Badge ── */
+    .badge {
+      display: inline-block; padding: 3px 10px; border-radius: 4px; /* הגדלה קלה */
+      font-size: 14px; font-weight: 600;
+    }
+    .badge-green  { background: var(--white-team); color: #111; }
+    .badge-red    { background: var(--danger); color: white; }
+    .badge-blue   { background: var(--accent); color: white; }
+    .badge-yellow { background: var(--warn); color: #111; }
+
+    /* ── Divider ── */
+    .divider { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+
+    /* ── Alert ── */
+    .alert {
+      padding: 12px 14px; border-radius: 8px; font-size: 14px; margin-bottom: 10px;
+    }
+    .alert-error   { background: #3a0a0a; border: 1px solid var(--danger); color: #fca5a5; }
+    .alert-success { background: #0a2a1a; border: 1px solid var(--accent2); color: #6ee7b7; }
+    .alert-info    { background: #0a1a3a; border: 1px solid var(--accent); color: #93c5fd; }
+    .alert-warn    { background: #2a1a0a; border: 1px solid var(--warn); color: #fcd34d; }
+
+    /* ── Loading ── */
+    .loading { text-align: center; padding: 40px; color: var(--muted); font-size: 16px; }
+    .spinner {
+      width: 28px; height: 28px; border: 3px solid var(--border);
+      border-top-color: var(--accent); border-radius: 50%;
+      animation: spin 0.7s linear infinite; margin: 0 auto 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Password screen ── */
+    .pw-screen {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; min-height: 60vh; gap: 16px;
+    }
+    .pw-icon { font-size: 48px; }
+
+    /* ── History game card ── */
+    .game-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; }
+    .game-date { font-size: 14px; font-weight: 700; color: var(--accent); padding: 12px 14px 6px; }
+    .game-teams { display: flex; gap: 12px; padding: 0 14px 10px; }
+    .game-team  { flex: 1; }
+    .game-team-name { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+    .game-players { font-size: 14px; color: var(--muted); line-height: 1.5; }
+    .win-buttons { display: flex; gap: 6px; padding: 0 14px 12px; }
+
+    /* ── Leaderboard ── */
+    .lb-row {
+      display: flex; align-items: center; gap: 8px; padding: 9px 0; /* הגדלה קלה בנייד */
+      border-bottom: 1px solid var(--border); font-size: 15px;
+    }
+    .lb-row:last-child { border-bottom: none; }
+    .lb-bar-wrap { flex: 1; background: var(--surface); border-radius: 4px; height: 14px; overflow: hidden; }
+    .lb-bar { height: 14px; background: var(--accent); border-radius: 4px; transition: width 0.4s; }
+
+    /* ── Expander ── */
+    .expander-btn {
+      width: 100%; padding: 12px 14px; background: var(--surface);
+      border: 1px solid var(--border); border-radius: 8px; color: var(--text);
+      font-family: var(--font); font-size: 15px; cursor: pointer; text-align: right;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .expander-body { padding: 10px 0; }
+
+    /* ── Field ── */
+    #field-wrap { position: relative; max-width: 360px; margin: 0 auto; touch-action: none; }
+    #field-wrap svg { width: 100%; border-radius: 8px; display: block; }
+    #pl { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+    .player-dot {
+      position: absolute; width: 42px; height: 42px; border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.9);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      cursor: grab; user-select: none; touch-action: none;
+      font-size: 8px; font-weight: 700; color: #111; text-align: center; line-height: 1.2;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.5); z-index: 10;
+    }
+    .player-dot:active { cursor: grabbing; z-index: 100; }
+
+    /* ── Toggle ── */
+    .toggle-wrap { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+    .toggle {
+      width: 44px; height: 24px; border-radius: 12px; background: var(--border);
+      position: relative; transition: background 0.2s; flex-shrink: 0;
+    }
+    .toggle.on { background: var(--accent); }
+    .toggle::after {
+      content: ''; position: absolute; top: 3px; right: 3px;
+      width: 18px; height: 18px; border-radius: 50%; background: white;
+      transition: transform 0.2s;
+    }
+    .toggle.on::after { transform: translateX(-20px); }
+
+    /* ── Scrollable tabs ── */
+    .section-title { font-size: 19px; font-weight: 700; margin: 16px 0 12px; }
+
+    /* ── Responsive ── */
+    @media (max-width: 400px) {
+      .app-header h1 { font-size: 24px; }
+      .tab-btn { font-size: 11px; padding: 12px 4px 8px; } /* אופטימיזציה לסרגל התחתון בנייד */
+    }
+  
+input[type="date"]{
+  background:#fff !important;
+  color:#000 !important;
+}
+
+</style>
+</head>
+<body>
+<div id="appVersion" style="
+position:fixed;
+top:10px;
+left:10px;
+z-index:99999;
+background:#111;
+color:#fff;
+padding:6px 12px;
+border-radius:8px;
+font-size:12px;
+font-weight:bold;
+box-shadow:0 2px 8px rgba(0,0,0,0.3);
+">
+v1.3.2
+</div>
+
+<div id="fixedVersionBanner" style="
+position:fixed;
+top:12px;
+left:12px;
+background:#000;
+color:#fff;
+padding:10px 16px;
+border-radius:12px;
+font-size:14px;
+font-weight:700;
+z-index:2147483647;
+box-shadow:0 4px 14px rgba(0,0,0,.35);
+font-family:Arial,sans-serif;
+pointer-events:none;
+">
+v1.3.1
+</div>
+
+
+<div id="root">
+<div style={{
+position:'fixed',
+top:'10px',
+left:'10px',
+background:'#000',
+color:'#fff',
+padding:'8px 14px',
+borderRadius:'10px',
+fontSize:'13px',
+fontWeight:'bold',
+zIndex:99999,
+boxShadow:'0 2px 10px rgba(0,0,0,0.3)'
+}}>
+גרסה v1.3.1
+</div>
+</div>
+<script type="text/babel">
+
+             
+// const API = "https://script.google.com/macros/s/AKfycbxsVMXN1kRKOmRnAJiyMhG__Wua0To6E3NOYu5e2-O0K6WTGH77L8T_Q6NrC2Z-4dso/exec";
+const APP_URL = window.location.origin + window.location.pathname;
+const ADMIN_CODE = "2026";
+const APP_VERSION = "v1.3.1";
+const DIV_CODE = localStorage.getItem("DIV_CODE") || "1122";
+const API_URL = "https://script.google.com/macros/s/AKfycbxsVMXN1kRKOmRnAJiyMhG__Wua0To6E3NOYu5e2-O0K6WTGH77L8T_Q6NrC2Z-4dso/exec";
+
+async function apiFetch(action) {
+  try {
+    const response = await fetch(
+      `${API_URL}?action=${action}&t=${Date.now()}`
+    );
+
+    return await response.json();
+
+  } catch (err) {
+    console.error("GET ERROR:", err);
+    return [];
+  }
+}
+
+async function apiPost(data) {
+  try {
+    const formData = new FormData();
+    formData.append("data", JSON.stringify(data));
+
+    const response = await fetch(API_URL, {
+      method: "POST",
+      body: formData
+    });
+
+    return await response.json();
+
+  } catch (err) {
+    console.error("POST ERROR:", err);
+    return { success: false };
+  }
+}
+
+  
+// ── Helpers ──────────────────────────────────────────────────
+
+function safeFloat(v, def=0) {
+  const f = parseFloat(v); return isNaN(f) ? def : f;
+}
+function safeInt(v, def=0) {
+  const i = parseInt(v); return isNaN(i) ? def : i;
+}
+function cleanPhone(v) {
+  try {
+    const s = String(v||'').trim();
+    if (!s || s.toLowerCase()==='nan' || s.toLowerCase()==='none') return '';
+    const f = parseFloat(s);
+    if (!isNaN(f) && f>0) {
+      const n = String(Math.round(f));
+      return n.length===9 ? '0'+n : n;
+    }
+    return s;
+  } catch { return ''; }
+}
+function cleanStr(v) {
+  const s = String(v||'').trim();
+  if (!s||s.toLowerCase()==='nan'||s.toLowerCase()==='none') return '';
+  const f = parseFloat(s);
+  if (!isNaN(f)) return String(Math.round(f));
+  return s;
+}
+function safeSplit(v) {
+  if (!v||String(v).toLowerCase()==='nan') return [];
+  return String(v).split(',').map(s=>s.trim()).filter(Boolean);
+}
+function safeJson(v) {
+  if (!v||String(v).toLowerCase()==='nan') return {};
+  if (typeof v==='object') return v;
+  try { return JSON.parse(v); } catch { return {}; }
+}
+function isActive(p) {
+  const v = String(p.active||'true').toLowerCase();
+  return !['false','0','none',''].includes(v);
+}
+function selfRating(p) {
+  const f = safeFloat(p.rating); return f>0 ? f : null;
+}
+function peerAvg(player, allPlayers) {
+  const target = player.name;
+  const received = [];
+  allPlayers.forEach(p => {
+    if (p.name===target) return;
+    const pr = safeJson(p.peer_ratings);
+    const v  = safeFloat(pr[target]);
+    if (v>0) received.push(v);
+  });
+  if (!received.length) return null;
+  return Math.round(received.reduce((a,b)=>a+b,0)/received.length*10)/10;
+}
+function playerScore(player, allPlayers) {
+  const s = selfRating(player);
+  const p = peerAvg(player, allPlayers);
+  if (s!==null && p!==null) return Math.round((s*0.6+p*0.4)*100)/100;
+  if (s!==null) return s;
+  return 0;
+}
+function playerAge(p) { return 2026 - safeInt(p.birth_year||1995, 1995); }
+function teamAvg(team) {
+  if (!team.length) return 0;
+  return team.reduce((a,b)=>a+b.score,0)/team.length;
+}
+function scoreColor(s) {
+  if (s>=7) return 'score-hi';
+  if (s>=5) return 'score-mid';
+  return 'score-lo';
+}
+
+// ── API calls ─────────────────────────────────────────────────
+// ── Team Division ─────────────────────────────────────────────
+
+const ROLE_GROUPS = {
+  "שוער":"שוערים","בלם":"מגנים","מגן ימין":"מגנים","מגן שמאל":"מגנים",
+  "קשר אחורי":"קשרים","קשר קדמי":"קשרים","אגף ימין":"קשרים","אגף שמאל":"קשרים",
+  "חלוץ":"חלוצים"
+};
+function getRole(p) {
+  const pr = String(p.primary_role||'').trim();
+  if (pr && !['nan','none',''].includes(pr.toLowerCase())) return pr;
+  const roles = safeSplit(p.roles);
+  return roles[0]||'';
+}
+function divideTeams(names, allPlayers, formation=null, shuffle=false) {
+  let pool = names.map(name => {
+    const p = allPlayers.find(x=>x.name===name);
+    if (!p) return null;
+    const role = getRole(p);
+    return { name, score: playerScore(p,allPlayers), age: playerAge(p), role, group: ROLE_GROUPS[role]||'אחר' };
+  }).filter(Boolean);
+
+  if (shuffle) pool = pool.sort(()=>Math.random()-0.5);
+  pool.sort((a,b)=>b.score-a.score);
+
+  let t1=[], t2=[];
+
+  if (!formation) {
+    pool.forEach((pl,i) => {
+      const block=Math.floor(i/2), pos=i%2;
+      if (block%2===0) { (pos===0?t1:t2).push(pl); }
+      else             { (pos===0?t2:t1).push(pl); }
+    });
+  } else {
+    const used = new Set();
+    Object.entries(formation).forEach(([group,needed]) => {
+      const gp = pool.filter(p=>p.group===group).slice(0,needed*2);
+      gp.forEach((pl,i) => { (i%2===0?t1:t2).push(pl); used.add(pl.name); });
+    });
+    pool.filter(p=>!used.has(p.name)).forEach(pl => {
+      (t1.length<=t2.length?t1:t2).push(pl);
+    });
+  }
+
+  while (t1.length > t2.length+1) t2.push(t1.pop());
+  while (t2.length > t1.length+1) t1.push(t2.pop());
+
+  // optimize
+  let improved=true, iters=0;
+  while (improved && iters<200) {
+    improved=false; iters++;
+    for (let i=0;i<t1.length;i++) for (let j=0;j<t2.length;j++) {
+      const db = Math.abs(teamAvg(t1)-teamAvg(t2));
+      [t1[i],t2[j]]=[t2[j],t1[i]];
+      const da = Math.abs(teamAvg(t1)-teamAvg(t2));
+      if (da<db) { improved=true; }
+      else [t1[i],t2[j]]=[t2[j],t1[i]];
+    }
+  }
+  return {t1,t2};
+}
+
+// ── Field Component ───────────────────────────────────────────
+
+function Field({t1,t2}) {
+  const wrapRef = React.useRef(null);
+  const [positions, setPositions] = React.useState({});
+
+  const ROLE_POS_BOTTOM = {
+    "שוער":{x:50,y:90},"בלם":{x:50,y:78},"מגן ימין":{x:25,y:72},
+    "מגן שמאל":{x:75,y:72},"קשר אחורי":{x:50,y:65},"אגף ימין":{x:14,y:61},
+    "אגף שמאל":{x:86,y:61},"קשר קדמי":{x:50,y:57},"חלוץ":{x:50,y:53}
+  };
+  const ROLE_POS_TOP = {
+    "שוער":{x:50,y:10},"בלם":{x:50,y:22},"מגן ימין":{x:75,y:28},
+    "מגן שמאל":{x:25,y:28},"קשר אחורי":{x:50,y:35},"אגף ימין":{x:86,y:39},
+    "אגף שמאל":{x:14,y:39},"קשר קדמי":{x:50,y:43},"חלוץ":{x:50,y:47}
+  };
+  const PRIORITY = ["שוער","בלם","מגן ימין","מגן שמאל","קשר אחורי","אגף ימין","אגף שמאל","קשר קדמי","חלוץ"];
+
+  React.useEffect(() => {
+    const pos = {};
+    const assign = (team, posMap, fallbackStart, fallbackDir) => {
+      const used = new Set();
+      team.forEach((p,idx) => {
+        const roles = safeSplit(p.role);
+        let placed = false;
+        for (const role of [p.role,...roles]) {
+          if (posMap[role] && !used.has(role)) {
+            pos[p.name] = {...posMap[role]};
+            used.add(role); placed=true; break;
+          }
+        }
+        if (!placed) {
+          const rem = PRIORITY.filter(r=>!used.has(r));
+          if (rem.length) { pos[p.name]={...posMap[rem[0]]}; used.add(rem[0]); }
+          else pos[p.name]={x:10+(idx*20)%80, y:fallbackStart+idx*fallbackDir*5};
+        }
+      });
+    };
+    assign(t1, ROLE_POS_BOTTOM, 90, -1);
+    assign(t2, ROLE_POS_TOP, 10, 1);
+    setPositions(pos);
+  }, [t1,t2]);
+
+  const startDrag = (name, e) => {
+    e.preventDefault();
+    const wrap = wrapRef.current;
+    if (!wrap) return;
+    const isTouch = e.type==='touchstart';
+    const getXY = ev => isTouch
+      ? {cx:ev.touches[0].clientX, cy:ev.touches[0].clientY}
+      : {cx:ev.clientX, cy:ev.clientY};
+
+    const onMove = ev => {
+      if (isTouch) ev.preventDefault();
+      const {cx,cy} = getXY(ev);
+      const r = wrap.getBoundingClientRect();
+      const nx = Math.max(0,Math.min(100,(cx-r.left)/r.width*100));
+      const ny = Math.max(0,Math.min(100,(cy-r.top)/r.height*100));
+      setPositions(prev=>({...prev,[name]:{x:nx,y:ny}}));
+    };
+    const onEnd = () => {
+      document.removeEventListener(isTouch?'touchmove':'mousemove', onMove);
+      document.removeEventListener(isTouch?'touchend':'mouseup', onEnd);
+    };
+    document.addEventListener(isTouch?'touchmove':'mousemove', onMove, {passive:false});
+    document.addEventListener(isTouch?'touchend':'mouseup', onEnd);
+  };
+
+  const all = [...t1.map(p=>({...p,color:'#4ade80'})), ...t2.map(p=>({...p,color:'#f87171'}))];
+
+  return (
+    <div>
+      <div style={{display:'flex',gap:8,justifyContent:'center',marginBottom:8,fontSize:14}}>
+        <span style={{background:'#4ade80',color:'#111',borderRadius:6,padding:'4px 12px',fontWeight:700}}>⚪ לבן — תחתון</span>
+        <span style={{background:'#f87171',color:'#111',borderRadius:6,padding:'4px 12px',fontWeight:700}}>⚫ שחור — עליון</span>
+      </div>
+      <div ref={wrapRef} id="field-wrap">
+        <svg viewBox="0 0 360 480">
+          <rect width="360" height="480" fill="#2d6a2d"/>
+          <rect x="0" y="0"   width="360" height="58" fill="#286228" opacity="0.4"/>
+          <rect x="0" y="116" width="360" height="58" fill="#286228" opacity="0.4"/>
+          <rect x="0" y="232" width="360" height="58" fill="#286228" opacity="0.4"/>
+          <rect x="0" y="348" width="360" height="58" fill="#286228" opacity="0.4"/>
+          <rect x="12" y="12" width="336" height="456" fill="none" stroke="white" strokeWidth="2"/>
+          <line x1="12" y1="248" x2="348" y2="248" stroke="white" strokeWidth="2"/>
+          <circle cx="180" cy="248" r="42" fill="none" stroke="white" strokeWidth="2"/>
+          <circle cx="180" cy="248" r="3" fill="white"/>
+          <rect x="112" y="12" width="136" height="36" fill="none" stroke="white" strokeWidth="2"/>
+          <rect x="138" y="12" width="84"  height="18" fill="none" stroke="white" strokeWidth="2"/>
+          <rect x="112" y="432" width="136" height="36" fill="none" stroke="white" strokeWidth="2"/>
+          <rect x="138" y="450" width="84"  height="18" fill="none" stroke="white" strokeWidth="2"/>
+          <path d="M112,48 A54,54 0 0,1 248,48"  fill="none" stroke="white" strokeWidth="2"/>
+          <path d="M112,432 A54,54 0 0,0 248,432" fill="none" stroke="white" strokeWidth="2"/>
+        </svg>
+        <div id="pl">
+          {all.map(p => {
+            const pos = positions[p.name];
+            if (!pos) return null;
+            const short = p.name.split(' ')[0];
+            return (
+              <div key={p.name} className="player-dot"
+                style={{background:p.color, left:`calc(${pos.x}% - 21px)`, top:`calc(${pos.y}% - 21px)`}}
+                onMouseDown={e=>startDrag(p.name,e)}
+                onTouchStart={e=>startDrag(p.name,e)}
+              >
+                <span style={{fontSize:9}}>{short}</span>
+                <span style={{fontSize:7,opacity:0.85}}>{p.role}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Password Screen ───────────────────────────────────────────
+
+function PasswordScreen({code, onSuccess, title="כניסה"}) {
+  const [pw,setPw] = React.useState('');
+  const [err,setErr] = React.useState('');
+  const check = () => {
+    if (pw===code) onSuccess();
+    else setErr('❌ קוד שגוי');
+  };
+  return (
+    <div className="pw-screen">
+      <div className="pw-icon">🔒</div>
+      <div style={{fontSize:18,fontWeight:700}}>{title}</div>
+      <div style={{width:'100%',maxWidth:280,display:'flex',flexDirection:'column',gap:10}}>
+        <input className="form-input" type="password" placeholder="הכנס קוד" value={pw}
+          onChange={e=>{setPw(e.target.value);setErr('');}}
+          onKeyDown={e=>e.key==='Enter'&&check()} style={{textAlign:'center',fontSize:18,letterSpacing:4}}/>
+        {err && <div className="alert alert-error">{err}</div>}
+        <button className="btn btn-primary" onClick={check}>כנס →</button>
+      </div>
+    </div>
+  );
+}
+
+// ── Rating Pills ──────────────────────────────────────────────
+
+function RatingPills({value, onChange, label}) {
+  return (
+    <div className="form-group">
+      <label className="form-label">{label}</label>
+      <div className="rating-pills">
+        {[1,2,3,4,5,6,7,8,9,10].map(n => (
+          <div key={n} className={`rating-pill${value===n?' selected':''}`} onClick={()=>onChange(value===n?null:n)}>{n}</div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Main App ──────────────────────────────────────────────────
+
+function App() {
+  const [tab, setTab]           = React.useState('divide');
+  const [players, setPlayers]   = React.useState([]);
+  const [history, setHistory]   = React.useState([]);
+  const [loading, setLoading]   = React.useState(true);
+  const [saving,  setSaving]    = React.useState(false);
+  const [msg,     setMsg]       = React.useState(null); // {type,text}
+
+  // Auth
+  const [divAuth,   setDivAuth]   = React.useState(false);
+  const [adminAuth, setAdminAuth] = React.useState(false);
+  const [tab3Auth,  setTab3Auth]  = React.useState(null); // null | name | '__admin__'
+
+  // WA deep-link
+  const [waPlayer, setWaPlayer] = React.useState(null); // player object if came via WA link
+
+  // ── Load ──
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const pname  = params.get('player');
+    const ppin   = params.get('pin');
+
+    Promise.all([apiFetch("getPlayers"), apiFetch("getHistory")]).then(([pRes,hRes]) => {
+      const pList = Array.isArray(pRes) ? pRes : [];
+      const hList = Array.isArray(hRes) ? hRes : [];
+      setPlayers(pList);
+      setHistory(hList);
+      setLoading(false);
+
+      // WA deep-link check
+      if (pname && ppin) {
+        const matched = pList.find(p=>p.name===pname && cleanStr(p.pin)===ppin.trim());
+        if (matched) { setWaPlayer(matched); setTab('update'); }
+      }
+    }).catch(()=>setLoading(false));
+  }, []);
+
+  const showMsg = (type,text,ms=3000) => {
+    setMsg({type,text});
+    setTimeout(()=>setMsg(null),ms);
+  };
+
+  const savePlayers = async (updatedPlayers) => {
+  if (typeof setPlayers === 'function') {
+    setPlayers(updatedPlayers); // עדכון מיידי על המסך
+  }
+  try {
+    await apiPost({ action: 'savePlayers', players: updatedPlayers });
+    console.log('✅ מאגר השחקנים עודכן בגוגל שיטס');
+  } catch (err) {
+    console.error("שגיאה בסנכרון השחקנים לגוגל:", err);
+  }
+};
+
+const saveHistory = async (updatedHistory) => {
+  if (typeof setHistory === 'function') {
+    setHistory(updatedHistory); // עדכון מיידי על המסך
+  }
+  try {
+    await apiPost({ action: 'saveHistory', history: updatedHistory });
+    console.log('✅ היסטוריית המשחקים עודכנה בגוגל שיטס');
+  } catch (err) {
+    console.error("שגיאה בסנכרון ההיסטוריה לגוגל:", err);
+  }
+};
+  
+  if (loading) return (
+    <div className="app-wrap"><div className="loading"><div className="spinner"/><div>טוען נתונים...</div></div></div>
+  );
+
+  // WA form
+  if (waPlayer) return (
+    <div className="app-wrap">
+      <div className="app-header"><h1>⚽ עדכון פרטים</h1></div>
+      {msg && <div className={`alert alert-${msg.type}`}>{msg.text}</div>}
+      <PlayerForm
+        player={waPlayer} allPlayers={players}
+        onSave={async (entry)=>{
+          const updated = players.map(p=>p.name===waPlayer.name?entry:p);
+          await savePlayers(updated);
+          setWaPlayer({...entry});
+        }}
+      />
+    </div>
+  );
+
+  const tabs = [
+    {id:'divide',  icon:'⚽', label:'חלוקה'},
+    {id:'roster',  icon:'👥', label:'מאגר'},
+    {id:'update',  icon:'📝', label:'עדכון'},
+    {id:'history', icon:'📅', label:'היסטוריה'},
+  ];
+
+  return (
+    <div className="app-wrap">
+      <div className="app-header"><h1>⚽ ניהול כדורגל 2026</h1></div>
+      {msg && <div className={`alert alert-${msg.type}`}>{msg.text}</div>}
+      {saving && <div className="alert alert-info">⏳ שומר...</div>}
+
+      {tab==='divide'  && <TabDivide  players={players} history={history} auth={divAuth} onAuth={()=>setDivAuth(true)} onSaveHistory={saveHistory} showMsg={showMsg} />}
+      {tab==='roster'  && <TabRoster  players={players} history={history} auth={adminAuth} onAuth={()=>setAdminAuth(true)} onSave={savePlayers} showMsg={showMsg} />}
+      {tab==='update'  && <TabUpdate  players={players} tab3Auth={tab3Auth} setTab3Auth={setTab3Auth} adminAuth={adminAuth} onSave={savePlayers} showMsg={showMsg} />}
+      {tab==='history' && <TabHistory players={players} history={history} onSave={async(h)=>{await saveHistory(h); const updated=recalcWins(players,h); await savePlayers(updated);}} showMsg={showMsg} />}
+
+      <div className="tab-bar">
+        {tabs.map(t=>(
+          <button key={t.id} className={`tab-btn${tab===t.id?' active':''}`} onClick={()=>setTab(t.id)}>
+            <span className="icon">{t.icon}</span>
+            <span>{t.label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── recalcWins ────────────────────────────────────────────────
+
+function recalcWins(players, history) {
+  const wins = {};
+  history.forEach(game => {
+    if (!game.winner) return;
+    const winners = game.winner==='לבן' ? game.team_white : game.team_black;
+    (winners||[]).forEach(name => { wins[name]=(wins[name]||0)+1; });
+  });
+  return players.map(p => ({...p, win_points: String(wins[p.name]||0)}));
+}
+
+// ── TAB: חלוקה ───────────────────────────────────────────────
+
+function TabDivide({players, history, auth, onAuth, onSaveHistory, showMsg}) {
+  const [selected, setSelected]   = React.useState([]);
+  const [teams,    setTeams]       = React.useState(null); // {t1,t2}
+  const [showField,setShowField]  = React.useState(false);
+  const [gameDate, setGameDate]   = React.useState(new Date().toISOString().split("T")[0]);
+  const [formation,setFormation]  = React.useState(null);
+  const [showForm, setShowForm]   = React.useState(false);
+  const [fGk,setFGk]=[React.useState(1)[0],React.useState(1)[1]];
+
+  if (!auth) return <PasswordScreen code={DIV_CODE} onSuccess={onAuth} title="כניסה לחלוקה" />;
+
+  const active = players.filter(isActive).map(p=>p.name).sort();
+
+  const toggle = name => setSelected(prev =>
+    prev.includes(name) ? prev.filter(n=>n!==name) : [...prev,name]
+  );
+
+  const divide = (shuffle=false) => {
+    if (selected.length<2) return;
+    const res = divideTeams(selected, players, formation, shuffle);
+    setTeams(res);
+    setShowField(false);
+  };
+
+  const swapPlayer = (from,to,idx) => {
+    if (!teams) return;
+    const nt1=[...teams.t1], nt2=[...teams.t2];
+    const [arr1,arr2] = from==='t1'?[nt1,nt2]:[nt2,nt1];
+    const player = arr1.splice(idx,1)[0];
+    arr2.push(player);
+    setTeams(from==='t1'?{t1:nt1,t2:nt2}:{t1:nt2,t2:nt1});
+  };
+
+  
+const saveGame = async () => {
+    if (!gameDate || !teams) return;
+
+    const existing = history.findIndex(g => g.date === gameDate);
+
+    const newGame = {
+      date: gameDate,
+
+      team1: teams.t1.map(p => p.name),
+      team2: teams.t2.map(p => p.name),
+
+      whiteTeam: "לבן",
+      blackTeam: "שחור",
+
+      whitePlayers: teams.t1.map(p => p.name).join(", "),
+      blackPlayers: teams.t2.map(p => p.name).join(", "),
+
+      winners: "",
+      losers: ""
+    };
+
+    const updated =
+      existing >= 0
+        ? history.map((g, i) => (i === existing ? newGame : g))
+        : [...history, newGame];
+
+    updated.sort((a, b) => String(b.date).localeCompare(String(a.date)));
+
+    await onSaveHistory(updated);
+
+    showMsg(
+      'success',
+      `✅ חלוקה נשמרה בהצלחה | ${APP_VERSION}`
+    );
+};
+
+
+  return (
+    <div>
+      <div className="section-title">בחר שחקנים שהגיעו</div>
+      <div className="pills">
+        {active.map(name=>(
+          <div key={name} className={`pill${selected.includes(name)?' selected':''}`} onClick={()=>toggle(name)}>{name}</div>
+        ))}
+      </div>
+      <div style={{fontSize:13,color:selected.length>=6?'var(--accent2)':selected.length>=2?'var(--warn)':'var(--danger)',marginBottom:10,fontWeight:600}}>
+        נבחרו: {selected.length} שחקנים
+      </div>
+
+      {/* תבנית */}
+      <button className="expander-btn" onClick={()=>setShowForm(!showForm)}>
+        <span>⚽ תבנית משחק (אופציונלי)</span><span>{showForm?'▲':'▼'}</span>
+      </button>
+      {showForm && (
+        <div className="expander-body">
+          <div style={{display:'flex',gap:8,marginTop:8}}>
+            {[['שוערים',1],['מגנים',3],['קשרים',3],['חלוצים',2]].map(([label,def])=>(
+              <FormationInput key={label} label={label} def={def} onChange={v=>{}} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div style={{display:'flex',gap:8,margin:'12px 0'}}>
+        <button className="btn btn-primary" style={{flex:1}} onClick={()=>divide(false)} disabled={selected.length<2}>חלק קבוצות 🚀</button>
+        <button className="btn btn-secondary" style={{flex:1}} onClick={()=>divide(true)} disabled={selected.length<2}>ערבב מחדש 🔀</button>
+      </div>
+
+      {teams && (
+        <>
+          {/* סטטיסטיקה */}
+          <TeamStats t1={teams.t1} t2={teams.t2} />
+
+          <TeamDisplay team={teams.t1} tk="t1" onSwap={i=>swapPlayer('t1','t2',i)} color="var(--white-team)" title="⚪ לבן" bg="var(--team-white,#1a3a2a)" />
+          <TeamDisplay team={teams.t2} tk="t2" onSwap={i=>swapPlayer('t2','t1',i)} color="var(--black-team)" title="⚫ שחור" bg="#3a1a1a" />
+
+          <button className="btn btn-secondary" style={{margin:'10px 0'}} onClick={()=>setShowField(!showField)}>
+            🏟️ {showField?'הסתר מגרש':'הצג מגרש'}
+          </button>
+          {showField && <Field t1={teams.t1} t2={teams.t2} players={players} />}
+
+          <hr className="divider" />
+          <div className="form-group">
+            <label className="form-label">תאריך המשחק</label>
+            <input type="date"
+style={{
+background:"#fff",
+color:"#000",
+border:"1px solid #ccc",
+padding:"8px",
+borderRadius:"8px"
+}} className="form-input" value={gameDate} onChange={e=>setGameDate(e.target.value)} />
+          </div>
+          <button className="btn btn-success" onClick={saveGame} disabled={!gameDate}>💾 שמור חלוקה להיסטוריה</button>
+          <div style={{height:40}}/>
+        </>
+      )}
+    </div>
+  );
+}
+
+function FormationInput({label,def}) {
+  const [v,setV]=React.useState(def);
+  return (
+    <div style={{flex:1,textAlign:'center'}}>
+      <div style={{fontSize:11,color:'var(--muted)',marginBottom:4}}>{label}</div>
+      <input type="number" min={0} max={6} value={v} onChange={e=>setV(e.target.value)}
+        className="form-input" style={{textAlign:'center',padding:'6px 4px'}}/>
+    </div>
+  );
+}
+
+function TeamStats({t1,t2}) {
+  const diff = Math.abs(teamAvg(t1)-teamAvg(t2));
+  const dc   = diff<0.5?'var(--accent2)':diff<1?'var(--warn)':'var(--danger)';
+  const a1s  = (teamAvg(t1)).toFixed(1);
+  const a2s  = (teamAvg(t2)).toFixed(1);
+  const a1g  = t1.length ? (t1.reduce((a,p)=>a+p.age,0)/t1.length).toFixed(1) : '—';
+  const a2g  = t2.length ? (t2.reduce((a,p)=>a+p.age,0)/t2.length).toFixed(1) : '—';
+  return (
+    <div className="card" style={{marginBottom:10}}>
+      <div style={{textAlign:'center',fontSize:14,color:dc,fontWeight:600,marginBottom:6}}>
+        פער בין קבוצות: {diff.toFixed(2)} | לבן: {t1.length} | שחור: {t2.length}
+      </div>
+      <div style={{display:'flex',justifyContent:'center',gap:20,fontSize:14}}>
+        <span style={{color:'var(--white-team)'}}>⚪ לבן — ציון: <b>{a1s}</b> | גיל: <b>{a1g}</b></span>
+        <span style={{color:'var(--muted)'}}>|</span>
+        <span style={{color:'var(--black-team)'}}>⚫ שחור — ציון: <b>{a2s}</b> | גיל: <b>{a2g}</b></span>
+      </div>
+    </div>
+  );
+}
+
+function TeamDisplay({team,tk,onSwap,title,bg}) {
+  const avg    = teamAvg(team);
+  const ageAvg = team.length ? (team.reduce((a,p)=>a+p.age,0)/team.length).toFixed(1) : '—';
+  return (
+    <div style={{marginBottom:10}}>
+      <div className="team-header" style={{background:bg}}>
+        {title} ({team.length}) <span style={{fontSize:13,fontWeight:400}}>| רמה {avg.toFixed(1)} | גיל {ageAvg}</span>
+      </div>
+      {team.map((p,i)=>(
+        <div key={p.name} className="player-row">
+          <span><b>{p.name}</b> <span style={{color:'var(--muted)',fontSize:14}}>({p.age})</span></span>
+          <div style={{display:'flex',alignItems:'center',gap:8}}>
+            <span className={`score-badge ${scoreColor(p.score)}`}>{p.score.toFixed(1)}</span>
+            <button className="btn btn-secondary btn-sm" onClick={()=>onSwap(i)}>🔄</button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── TAB: מאגר שחקנים ─────────────────────────────────────────
+
+function TabRoster({players, history, auth, onAuth, onSave, showMsg}) {
+  const [search,    setSearch]    = React.useState('');
+  const [showOff,   setShowOff]   = React.useState(false);
+  const [editPlayer,setEditPlayer]= React.useState(null);
+
+  if (!auth) return <PasswordScreen code={ADMIN_CODE} onSuccess={onAuth} title="כניסה למנהל" />;
+
+  const genAllPins = async () => {
+    let changed=false;
+    const updated = players.map(p=>{
+      const phone=cleanPhone(p.phone), pin=cleanStr(p.pin);
+      if (phone&&!pin) { changed=true; return {...p,pin:String(1000+Math.floor(Math.random()*9000))}; }
+      return p;
+    });
+    if (changed) { await onSave(updated); showMsg('success','✅ PINים נוצרו'); }
+    else showMsg('info','כולם כבר קיבלו PIN');
+  };
+
+  const toggleActive = async (name) => {
+    const updated = players.map(p=>p.name===name?{...p,active:String(!isActive(p))}:p);
+    await onSave(updated);
+  };
+
+  const deletePlayer = async (name) => {
+    if (!window.confirm(`למחוק את ${name}?`)) return;
+    await onSave(players.filter(p=>p.name!==name));
+  };
+
+  const filtered = players
+    .filter(p=>(showOff||isActive(p))&&(!search||p.name.toLowerCase().includes(search.toLowerCase())))
+    .sort((a,b)=>a.name.split(' ')[0].localeCompare(b.name.split(' ')[0],'he'));
+
+  if (editPlayer) return (
+    <div>
+      <button className="btn btn-secondary" style={{marginBottom:12}} onClick={()=>setEditPlayer(null)}>← חזור למאגר</button>
+      <PlayerForm player={editPlayer} allPlayers={players}
+        onSave={async entry=>{
+          const updated=players.map(p=>p.name===editPlayer.name?entry:p);
+          await onSave(updated); setEditPlayer(null);
+        }} />
+    </div>
+  );
+
+  return (
+    <div>
+      <div style={{display:'flex',gap:8,marginBottom:12,alignItems:'center'}}>
+        <div style={{flex:1,fontSize:18,fontWeight:700}}>מאגר ({players.length})</div>
+        <button className="btn btn-secondary btn-sm" onClick={genAllPins}>🔑 צור PIN לכולם</button>
+      </div>
+      <input className="form-input" placeholder="🔍 חפש שחקן..." value={search}
+        onChange={e=>setSearch(e.target.value)} style={{marginBottom:8}} />
+      <div className="toggle-wrap" style={{marginBottom:12}} onClick={()=>setShowOff(!showOff)}>
+        <div className={`toggle${showOff?' on':''}`}/>
+        <span style={{fontSize:13}}>הצג לא פעילים</span>
+      </div>
+
+      {filtered.map(p => {
+        const sr=selfRating(p), pr=peerAvg(p,players), ws=playerScore(p,players);
+        const wins=safeInt(p.win_points);
+        const games=history.filter(g=>(g.team_white||[]).concat(g.team_black||[]).includes(p.name)).length;
+        const phone=cleanPhone(p.phone), pin=cleanStr(p.pin);
+        const primary=String(p.primary_role||'').replace(/nan|none/i,'').trim();
+        const roles=safeSplit(p.roles).join(', ')||'לא הוגדר';
+
+        return (
+          <div key={p.name} className="card" style={{marginBottom:8}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:6}}>
+              <div>
+                <span style={{color:'var(--accent)',fontSize:14,marginLeft:6}}>#{cleanStr(p.player_num)}</span>
+                <b style={{fontSize:16}}>{p.name}</b>
+                <span style={{color:'var(--muted)',fontSize:14,marginRight: 3, marginLeft: 3}}> ({playerAge(p)})</span>
+                <span className={`badge ${isActive(p)?'badge-green':'badge-red'}`}>{isActive(p)?'פעיל':'לא פעיל'}</span>
+                {(wins>0||games>0)&&<span className="badge badge-yellow" style={{marginRight:6}}>🏆 {wins}/{games}</span>}
+              </div>
+            </div>
+            <div style={{fontSize:14,color:'var(--muted)',marginBottom:6}}>
+              תפקידים: {roles}{primary?<b style={{color:'var(--warn)'}}> | ⭐ {primary}</b>:''}
+            </div>
+            <div style={{display:'flex',gap:12,fontSize:14,marginBottom:10,flexWrap:'wrap'}}>
+              <span>אישי: <b className={scoreColor(sr||0)} style={{color:sr>=7?'var(--white-team)':sr>=5?'var(--warn)':'var(--muted)'}}>{sr??'—'}</b></span>
+              <span>קבוצתי: <b style={{color:pr>=7?'var(--white-team)':pr>=5?'var(--warn)':'var(--muted)'}}>{pr??'—'}</b></span>
+              <span>משוכלל: <b className={scoreColor(ws)} style={{color:ws>=7?'var(--white-team)':ws>=5?'var(--warn)':'var(--muted)'}}>{ws.toFixed(1)}</b></span>
+            </div>
+            <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+              <button className="btn btn-secondary btn-sm" onClick={()=>toggleActive(p.name)}>
+                {isActive(p)?'🔴 לא פעיל':'🟢 פעיל'}
+              </button>
+              <button className="btn btn-secondary btn-sm" onClick={()=>setEditPlayer(p)}>📝 ערוך</button>
+              {phone&&pin&&(
+                <button className="btn btn-wa btn-sm" onClick={()=>{
+                  const link=`${APP_URL}?player=${encodeURIComponent(p.name)}&pin=${pin}`;
+                  const msg=`שלום ${p.name.split(' ')[0]}! קישור: ${link} | קוד: ${pin}`;
+                  window.open(`https://wa.me/972${phone.replace(/^0/,'')}?text=${encodeURIComponent(msg)}`,'_blank');
+                }}>💬 WhatsApp</button>
+              )}
+              <button className="btn btn-danger btn-sm" onClick={()=>deletePlayer(p.name)}>🗑️</button>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── TAB: עדכון / הרשמה ───────────────────────────────────────
+
+function TabUpdate({players, tab3Auth, setTab3Auth, adminAuth, onSave, showMsg}) {
+  const [choice, setChoice] = React.useState('🆕 שחקן חדש');
+  const [loginName, setLoginName] = React.useState('');
+  const [loginPin,  setLoginPin]  = React.useState('');
+  const [loginErr,  setLoginErr]  = React.useState('');
+
+  React.useEffect(()=>{ if (adminAuth&&!tab3Auth) setTab3Auth('__admin__'); },[adminAuth]);
+
+  if (!tab3Auth) return (
+    <div>
+      <div className="section-title">כניסה לעדכון פרטים</div>
+      <div className="form-group">
+        <label className="form-label">שם:</label>
+        <select className="form-select" value={loginName} onChange={e=>{setLoginName(e.target.value);setLoginErr('');}}>
+          <option value="">— בחר שחקן —</option>
+          {players.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+        </select>
+      </div>
+      <div className="form-group">
+        <label className="form-label">קוד PIN:</label>
+        <input className="form-input" type="password" maxLength={4} placeholder="4 ספרות"
+          value={loginPin} onChange={e=>{setLoginPin(e.target.value);setLoginErr('');}}
+          style={{letterSpacing:4,textAlign:'center'}} />
+      </div>
+      {loginErr && <div className="alert alert-error">{loginErr}</div>}
+      <button className="btn btn-primary" onClick={()=>{
+        if (!loginName||!loginPin) { setLoginErr('מלא שם וקוד'); return; }
+        const p = players.find(x=>x.name===loginName&&String(x.pin).trim()===loginPin.trim());
+        if (p) { setTab3Auth(loginName); setChoice(loginName); }
+        else setLoginErr('❌ שם או קוד שגוי');
+      }}>כנס →</button>
+    </div>
+  );
+
+  const isAdmin = tab3Auth==='__admin__';
+  const allOptions = ['🆕 שחקן חדש', ...players.map(p=>p.name).sort()];
+  const effectiveChoice = isAdmin ? choice : tab3Auth;
+  const pdata = players.find(p=>p.name===effectiveChoice)||null;
+
+  return (
+    <div>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
+        <div>
+          {isAdmin ? <span className="badge badge-blue">👑 מנהל</span>
+                   : <span className="badge badge-green">👋 {tab3Auth}</span>}
+        </div>
+        <button className="btn btn-secondary btn-sm" onClick={()=>setTab3Auth(null)}>🚪 התנתק</button>
+      </div>
+
+      {isAdmin && (
+        <div className="form-group">
+          <label className="form-label">בחר שחקן:</label>
+          <select className="form-select" value={choice} onChange={e=>setChoice(e.target.value)}>
+            {allOptions.map(o=><option key={o} value={o}>{o}</option>)}
+          </select>
+        </div>
+      )}
+
+      <PlayerForm
+        key={effectiveChoice}
+        player={pdata}
+        allPlayers={players}
+        onSave={async entry=>{
+          let updated;
+          if (pdata) updated=players.map(p=>p.name===pdata.name?entry:p);
+          else {
+            if (players.find(p=>p.name===entry.name)) { showMsg('error','שחקן עם שם זה כבר קיים'); return; }
+            updated=[...players,entry];
+          }
+          await onSave(updated);
+          showMsg('success',`✅ ${entry.name} נשמר`);
+          if (isAdmin) setChoice(entry.name);
+        }}
+      />
+    </div>
+  );
+}
+
+// ── PlayerForm ────────────────────────────────────────────────
+
+function PlayerForm({player, allPlayers, onSave}) {
+  const ROLES = ["שוער","בלם","מגן ימין","מגן שמאל","קשר אחורי","קשר קדמי","אגף ימין","אגף שמאל","חלוץ"];
+
+  const initPrimary = () => {
+    const v=String(player?.primary_role||'').trim();
+    return v&&!['nan','none'].includes(v.toLowerCase())?v:'';
+  };
+
+  const [name,    setName]    = React.useState(player?.name||'');
+  const [phone,   setPhone]   = React.useState(cleanPhone(player?.phone)||'');
+  const [year,    setYear]    = React.useState(()=>{ const y=safeInt(player?.birth_year,1990); return Math.max(1950,Math.min(2015,y)); });
+  const [roles,   setRoles]   = React.useState(safeSplit(player?.roles)||[]);
+  const [primary, setPrimary] = React.useState(initPrimary());
+  const [rating,  setRating]  = React.useState(()=>{ const r=safeInt(player?.rating,0); return r>0?r:null; });
+  const [active,  setActive]  = React.useState(player?isActive(player):true);
+  const [peers,   setPeers]   = React.useState(()=>safeJson(player?.peer_ratings)||{});
+  const [errors,  setErrors]  = React.useState([]);
+  const [showPeers,setShowPeers]=React.useState(false);
+
+  const pin = cleanStr(player?.pin)||'';
+  const num = player&&String(player.player_num||'').match(/\d/)
+    ? safeInt(player.player_num) : allPlayers.length+1;
+
+  const toggleRole = r => {
+    setRoles(prev => {
+      const next = prev.includes(r)?prev.filter(x=>x!==r):[...prev,r];
+      if (!next.includes(primary)) setPrimary(next[0]||'');
+      return next;
+    });
+  };
+
+  const sr = selfRating(player||{}); const pr = peerAvg(player||{},allPlayers); const ws = playerScore(player||{},allPlayers);
+
+  const submit = async () => {
+    const errs=[];
+    if (!name.trim()) errs.push('שם מלא');
+    const ph=phone.replace(/[-\s]/g,'');
+    if (!ph) errs.push('מספר פלאפון');
+    else if (!/^\d{9,10}$/.test(ph)) errs.push('פלאפון לא תקין');
+    if (!roles.length) errs.push('תפקידים');
+    if (!rating) errs.push('ציון עצמי');
+    const unrated=Object.entries(peers).filter(([,v])=>!v).map(([k])=>k);
+    if (unrated.length&&allPlayers.length>1) errs.push(`דירוג חסר: ${unrated.join(', ')}`);
+    if (errs.length) { setErrors(errs); return; }
+
+    const newPin=pin||String(1000+Math.floor(Math.random()*9000));
+    const entry={
+      name:name.trim(), player_num:String(num), birth_year:String(year),
+      rating:String(rating), roles:roles.join(','), primary_role:primary||roles[0]||'',
+      peer_ratings:JSON.stringify(Object.fromEntries(Object.entries(peers).filter(([,v])=>v>0))),
+      active:String(active), phone:phone.trim(), pin:newPin,
+      win_points:String(safeInt(player?.win_points)),
+    };
+    await onSave(entry);
+    setErrors([]);
+  };
+
+  const others = allPlayers.filter(p=>p.name!==(player?.name||'')).sort((a,b)=>a.name.split(' ')[0].localeCompare(b.name.split(' ')[0],'he'));
+
+  return (
+    <div>
+      {/* ציונים */}
+      {player&&(
+        <div style={{display:'flex',gap:8,background:'var(--card)',borderRadius:10,padding:12,marginBottom:14}}>
+          {[['ציון אישי',sr],['קבוצתי',pr],['משוכלל',ws>0?ws:null]].map(([label,val])=>(
+            <div key={label} style={{flex:1,textAlign:'center'}}>
+              <div style={{fontSize:11,color:'var(--muted)',marginBottom:3}}>{label}</div>
+              <div style={{fontSize:22,fontWeight:700,color:val==null?'var(--muted)':val>=7?'var(--white-team)':val>=5?'var(--warn)':'var(--danger)'}}>
+                {val!=null?val.toFixed(1):'—'}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div style={{color:'var(--muted)',fontSize:13,marginBottom:8}}>
+        מספר שחקן: <b style={{color:'var(--accent)'}}>#{num}</b>
+        {pin&&<span style={{marginRight:12}}>🔑 קוד: <b style={{color:'var(--accent)'}}>{pin}</b></span>}
+        {!pin&&player&&<span style={{color:'var(--warn)',marginRight:12,fontSize:14}}>🔑 PIN ייווצר בשמירה</span>}
+      </div>
+
+      <div className="form-group">
+        <label className="form-label">שם מלא *</label>
+        <input className="form-input" value={name} onChange={e=>setName(e.target.value)} placeholder="הכנס שם מלא"/>
+      </div>
+      <div className="form-group">
+        <label className="form-label">מספר פלאפון *</label>
+        <input className="form-input" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="05X-XXXXXXX"/>
+      </div>
+      <div className="form-group">
+        <label className="form-label">שנת לידה *</label>
+        <input className="form-input" type="number" min={1950} max={2015} value={year}
+          onChange={e=>setYear(Math.max(1950,Math.min(2015,safeInt(e.target.value,1990))))}/>
+      </div>
+
+      <div className="form-group">
+        <label className="form-label">תפקידים *<br/><span style={{fontWeight:400,color:'var(--muted)'}}>בחר תפקידים, לאחר מכן בחר תפקיד עיקרי</span></label>
+        <div className="pills" style={{marginBottom:8}}>
+          {ROLES.map(r=>(
+            <div key={r} className={`pill${roles.includes(r)?' selected-green':''}`} onClick={()=>toggleRole(r)}>{r}</div>
+          ))}
+        </div>
+        {roles.length>0&&(
+          <div className="form-group">
+            <label className="form-label">⭐ תפקיד עיקרי</label>
+            <select className="form-select" value={primary} onChange={e=>setPrimary(e.target.value)}>
+              {roles.map(r=><option key={r} value={r}>{r}</option>)}
+            </select>
+          </div>
+        )}
+      </div>
+
+      <RatingPills value={rating} onChange={setRating} label="ציון עצמי (1-10) *"/>
+
+      <div className="toggle-wrap" style={{marginBottom:14}} onClick={()=>setActive(!active)}>
+        <div className={`toggle${active?' on':''}`}/>
+        <span style={{fontSize:13}}>שחקן פעיל</span>
+      </div>
+
+      <hr className="divider"/>
+      <div className="form-group">
+        <label className="form-label">דירוג עמיתים (חובה לכל שחקן)</label>
+        <button className="expander-btn" onClick={()=>setShowPeers(!showPeers)}>
+          <span>דרג {others.length} שחקנים</span><span>{showPeers?'▲':'▼'}</span>
+        </button>
+        {showPeers&&(
+          <div style={{marginTop:8}}>
+            {others.map(op=>(
+              <div key={op.name} style={{marginBottom:10}}>
+                <label className="form-label">{op.name}</label>
+                <div className="rating-pills">
+                  {[1,2,3,4,5,6,7,8,9,10].map(n=>(
+                    <div key={n} className={`rating-pill${peers[op.name]===n?' selected':''}`}
+                      onClick={()=>setPeers(prev=>({...prev,[op.name]:prev[op.name]===n?0:n}))}>
+                      {n}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {errors.length>0&&(
+        <div className="alert alert-error">❌ {errors.join(' | ')}</div>
+      )}
+      <button className="btn btn-primary" onClick={submit}>💾 שמור</button>
+    </div>
+  );
+}
+
+// ── TAB: היסטוריה ────────────────────────────────────────────
+
+function TabHistory({ history, onSave }) {
+  // --- חלק 1: חישוב אוטומטי של סטטיסטיקת השחקנים מתוך ההיסטוריה ---
+  const playerStats = {};
+
+  history.forEach(game => {
+    if (!game.winner || !game.players) return;
+    
+    // הפיכת טקסט השחקנים של המשחק למערך שמות נקי
+    const gamePlayers = String(game.players).split(',').map(s => s.trim()).filter(Boolean);
+    
+    gamePlayers.forEach(playerName => {
+      if (!playerStats[playerName]) {
+        playerStats[playerName] = { name: playerName, wins: 0, games: 0 };
+      }
+      playerStats[playerName].games += 1;
+      playerStats[playerName].wins += 1; // כרגע השמות ברשימה הם רק של הקבוצה המנצחת
+    });
+  });
+
+  // הפיכה למערך ומיון לפי כמות ניצחונות (מהגבוה לנמוך)
+  const statsArray = Object.values(playerStats).sort((a, b) => b.wins - a.wins);
+
+  // --- חלק 2: מנגנון עדכון מנצח ושמות השחקנים ---
+  const handleWinner = async (gameDate, winnerTeam) => {
+    const updatedHistory = history.map(game => {
+      if (game.date === gameDate) {
+        let finalPlayers = game.players || '';
+        
+        // אם אין שחקנים רשומים למשחק הזה, או שמחליפים מנצח - נבקש מהמשתמש להזין שמות
+        const promptPlayers = prompt(
+          `נקבע ניצחון לקבוצה ה${winnerTeam}.\nאנא הזן או עדכן את שמות השחקנים המנצחים (מופרדים בפסיקים):`, 
+          game.players || ''
+        );
+        
+        if (promptPlayers !== null) {
+          finalPlayers = promptPlayers;
+        } else if (!game.players) {
+          return game; // אם לחץ ביטול ולא היו שחקנים קודם, לא נשנה כלום
+        }
+
+        return { 
+          ...game, 
+          winner: winnerTeam,
+          team_white: game.team_white || '',
+          team_black: game.team_black || '',
+          players_white: game.players_white || '',
+          players_black: game.players_black || '',
+          losing_players: game.losing_players || '',
+          players: finalPlayers
+        };
+      }
+      return game;
+    });
+    
+    await onSave(updatedHistory);
+  };
+
+  return (
+    <div>
+      {/* --- תצוגת סטטיסטיקת שחקנים (החלק שנמחק) --- */}
+      <div style={{ background: '#1e1e1e', padding: '15px', borderRadius: '8px', marginBottom: '25px', border: '1px solid #ffb300' }}>
+        <h3 style={{ margin: '0 0 12px 0', color: '#ffb300', fontSize: '16px' }}>🏆 טבלת רייטינג וסטטיסטיקת ניצחונות</h3>
+        {statsArray.length === 0 ? (
+          <div style={{ color: '#aaa', fontSize: '13px' }}>אין עדיין נתוני משחקים לחישוב סטטיסטיקה.</div>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'right' }}>
+              <thead>
+                <tr style={{ borderBottom: '2px solid #444', color: '#aaa' }}>
+                  <th style={{ padding: '8px 4px' }}>שחקן</th>
+                  <th style={{ padding: '8px 4px', textAlign: 'center' }}>ניצחונות</th>
+                  <th style={{ padding: '8px 4px', textAlign: 'center' }}>משחקים</th>
+                </tr>
+              </thead>
+              <tbody>
+                {statsArray.map((player, index) => (
+                  <tr key={player.name} style={{ borderBottom: '1px solid #333', background: index % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent' }}>
+                    <td style={{ padding: '8px 4px', fontWeight: 'bold', color: '#fff' }}>{player.name}</td>
+                    <td style={{ padding: '8px 4px', textAlign: 'center', color: '#4caf50', fontWeight: 'bold' }}>{player.wins}</td>
+                    <td style={{ padding: '8px 4px', textAlign: 'center', color: '#ccc' }}>{player.games}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <hr style={{ border: '0', borderTop: '1px solid #444', marginBottom: '20px' }} />
+
+      {/* --- רשימת המשחקים האחרונים --- */}
+      <h3 style={{ marginBottom: '15px', fontSize: '15px' }}>משחקים אחרונים במאגר ({history.length})</h3>
+      
+      {history.map(game => {
+        const currentWinningPlayers = game.players ? String(game.players).split(',').map(s=>s.trim()).filter(Boolean) : [];
+        
+        return (
+          <div key={new Date(game.date).toLocaleDateString('he-IL')} style={{ background: '#2d2d2d', padding: '15px', borderRadius: '8px', marginBottom: '12px', border: '1px solid #444' }}>
+            <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#fff' }}>📅 תאריך: {new Date(game.date).toLocaleDateString('he-IL')}</div>
+            
+            <div style={{ marginBottom: '10px' }}>
+              <span style={{ color: '#ccc' }}>סטטוס ניצחון: </span>
+              {game.winner ? (
+                <span style={{ background: '#2e7d32', color: '#fff', padding: '3px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>
+                  🏆 קבוצה {game.winner} ניצחה
+                </span>
+              ) : (
+                <span style={{ background: '#f57c00', color: '#fff', padding: '3px 8px', borderRadius: '4px', fontSize: '12px' }}>
+                  טרם נקבע מנצח
+                </span>
+              )}
+            </div>
+
+            {currentWinningPlayers.length > 0 && (
+              <div style={{ background: '#1e1e1e', padding: '10px', borderRadius: '6px', marginBottom: '10px' }}>
+                <div style={{ fontSize: '11px', color: '#aaa', marginBottom: '4px', fontWeight: 'bold' }}>
+                  השחקנים המנצחים (ממוצע רייטינג: {game.avg_score || '0.00'}):
+                </div>
+                <div style={{ fontSize: '13px', color: '#4caf50', lineHeight: '1.4', fontWeight: '500' }}>
+                  {currentWinningPlayers.join(', ')}
+                </div>
+              </div>
+            )}
+            
+            <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+              <button 
+                style={{ flex: 1, padding: '8px', background: game.winner === 'לבן' ? '#2e7d32' : '#555', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+                onClick={() => handleWinner(game.date, 'לבן')}
+              >
+                {game.winner === 'לבן' ? '🏆 לבן המנצח' : 'קבע ניצחון לבן'}
+              </button>
+              <button 
+                style={{ flex: 1, padding: '8px', background: game.winner === 'שחור' ? '#2e7d32' : '#555', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+                onClick={() => handleWinner(game.date, 'שחור')}
+              >
+                {game.winner === 'שחור' ? '🏆 שחור המנצח' : 'קבע ניצחון שחור'}
+              </button>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+  
+// ── Render ────────────────────────────────────────────────────
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
+
+
+<style>
+input[type="date"]{
+  color:#fff !important;
+  background:#1e1e1e !important;
+}
+input[type="date"]::-webkit-calendar-picker-indicator{
+  filter:invert(1);
+  cursor:pointer;
+}
+</style>
