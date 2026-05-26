@@ -433,24 +433,6 @@ async function apiPost(data) {
   }
 }
 
-async function apiPost(data) {
-  try {
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: {
-        'Content-Type': 'text/plain'
-      },
-      body: JSON.stringify(data)
-    });
-
-    return { success: true };
-
-  } catch (err) {
-    console.error('שגיאה בשליחת הנתונים:', err);
-    return { success: false };
-  }
-}
   
 // ── Team Division ─────────────────────────────────────────────
 
