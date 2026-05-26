@@ -825,37 +825,43 @@ function TabDivide({players, history, auth, onAuth, onSaveHistory, showMsg}) {
     setTeams(from==='t1'?{t1:nt1,t2:nt2}:{t1:nt2,t2:nt1});
   };
 
-  const saveGame = async () => {
+  
+const saveGame = async () => {
     if (!gameDate || !teams) return;
+
     const existing = history.findIndex(g => g.date === gameDate);
-    
-    const totalAvg = ((teamAvg(teams.t1) + teamAvg(teams.t2)) / 2).toFixed(2);
 
     const newGame = {
-  date: gameDate,
+      date: gameDate,
 
-  whiteTeam: "לבן",
-  blackTeam: "שחור",
+      team1: teams.t1.map(p => p.name),
+      team2: teams.t2.map(p => p.name),
 
-  whitePlayers: teams.t1.map(p => p.name).join(", "),
-  blackPlayers: teams.t2.map(p => p.name).join(", "),
+      whiteTeam: "לבן",
+      blackTeam: "שחור",
 
-  winners:
-    winner === 1
-      ? teams.t1.map(p => p.name).join(", ")
-      : teams.t2.map(p => p.name).join(", "),
+      whitePlayers: teams.t1.map(p => p.name).join(", "),
+      blackPlayers: teams.t2.map(p => p.name).join(", "),
 
-  losers:
-    winner === 1
-      ? teams.t2.map(p => p.name).join(", ")
-      : teams.t1.map(p => p.name).join(", ")
-};
-    
-    const updated = existing >= 0 ? history.map((g, i) => i === existing ? newGame : g) : [...history, newGame];
-    updated.sort((a, b) => b.date.localeCompare(a.date));
+      winners: "",
+      losers: ""
+    };
+
+    const updated =
+      existing >= 0
+        ? history.map((g, i) => (i === existing ? newGame : g))
+        : [...history, newGame];
+
+    updated.sort((a, b) => String(b.date).localeCompare(String(a.date)));
+
     await onSaveHistory(updated);
-    showMsg('success', `✅ חלוקה נשמרה. כעת עבור ללשונית היסטוריה כדי לקבוע מי הניצח!`);
-  };
+
+    showMsg(
+      'success',
+      `✅ חלוקה נשמרה בהצלחה | ${APP_VERSION}`
+    );
+};
+
 
   return (
     <div>
@@ -1467,3 +1473,15 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
 </body>
 </html>
+
+
+<style>
+input[type="date"]{
+  color:#fff !important;
+  background:#1e1e1e !important;
+}
+input[type="date"]::-webkit-calendar-picker-indicator{
+  filter:invert(1);
+  cursor:pointer;
+}
+</style>
