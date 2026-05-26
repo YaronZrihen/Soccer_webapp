@@ -837,18 +837,18 @@ function TabDivide({players, history, auth, onAuth, onSaveHistory, showMsg}) {
   whiteTeam: "לבן",
   blackTeam: "שחור",
 
-  whitePlayers: t1.map(p => p.name).join(", "),
-  blackPlayers: t2.map(p => p.name).join(", "),
+  whitePlayers: teams.t1.map(p => p.name).join(", "),
+  blackPlayers: teams.t2.map(p => p.name).join(", "),
 
   winners:
     winner === 1
-      ? t1.map(p => p.name).join(", ")
-      : t2.map(p => p.name).join(", "),
+      ? teams.t1.map(p => p.name).join(", ")
+      : teams.t2.map(p => p.name).join(", "),
 
   losers:
     winner === 1
-      ? t2.map(p => p.name).join(", ")
-      : t1.map(p => p.name).join(", ")
+      ? teams.t2.map(p => p.name).join(", ")
+      : teams.t1.map(p => p.name).join(", ")
 };
     
     const updated = existing >= 0 ? history.map((g, i) => i === existing ? newGame : g) : [...history, newGame];
