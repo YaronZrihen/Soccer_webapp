@@ -337,20 +337,23 @@ const APP_VERSION = "v1.3.1";
 const DIV_CODE = localStorage.getItem("DIV_CODE") || "1122";
 const API_URL = "https://script.google.com/macros/s/AKfycbxsVMXN1kRKOmRnAJiyMhG__Wua0To6E3NOYu5e2-O0K6WTGH77L8T_Q6NrC2Z-4dso/exec";
 
-async function apiFetch(url) {
-  const response = await fetch(url + "&t=" + Date.now());
+async function apiFetch(action) {
+  try {
+    const response = await fetch(
+      `${API_URL}?action=${action}&t=${Date.now()}`
+    );
 
-  if (!response.ok) {
-    throw new Error("GET failed");
+    return await response.json();
+
+  } catch (err) {
+    console.error("GET ERROR:", err);
+    return [];
   }
-
-  return await response.json();
 }
 
 async function apiPost(data) {
   try {
     const formData = new FormData();
-
     formData.append("data", JSON.stringify(data));
 
     const response = await fetch(API_URL, {
@@ -361,7 +364,7 @@ async function apiPost(data) {
     return await response.json();
 
   } catch (err) {
-    console.error("שגיאה בשליחת הנתונים:", err);
+    console.error("POST ERROR:", err);
     return { success: false };
   }
 }
@@ -681,7 +684,7 @@ function App() {
     const pname  = params.get('player');
     const ppin   = params.get('pin');
 
-    Promise.all([apiFetch('getPlayers'), apiFetch('getHistory')]).then(([pRes,hRes]) => {
+    Promise.all([apiFetch("getPlayers"), apiFetch("getHistory")]).then(([pRes,hRes]) => {
       const pList = Array.isArray(pRes) ? pRes : [];
       const hList = Array.isArray(hRes) ? hRes : [];
       setPlayers(pList);
