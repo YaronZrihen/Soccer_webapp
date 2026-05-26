@@ -330,12 +330,43 @@ boxShadow:'0 2px 10px rgba(0,0,0,0.3)'
 <script type="text/babel">
 
              
-const API = "https://script.google.com/macros/s/AKfycbxsVMXN1kRKOmRnAJiyMhG__Wua0To6E3NOYu5e2-O0K6WTGH77L8T_Q6NrC2Z-4dso/exec";
+// const API = "https://script.google.com/macros/s/AKfycbxsVMXN1kRKOmRnAJiyMhG__Wua0To6E3NOYu5e2-O0K6WTGH77L8T_Q6NrC2Z-4dso/exec";
 const APP_URL = window.location.origin + window.location.pathname;
 const ADMIN_CODE = "2026";
 const APP_VERSION = "v1.3.0";
 const DIV_CODE = localStorage.getItem("DIV_CODE") || "1122";
+const API_URL = "https://script.google.com/macros/s/AKfycbxsVMXN1kRKOmRnAJiyMhG__Wua0To6E3NOYu5e2-O0K6WTGH77L8T_Q6NrC2Z-4dso/exec";
 
+async function apiFetch(url) {
+  const response = await fetch(url + "&t=" + Date.now());
+
+  if (!response.ok) {
+    throw new Error("GET failed");
+  }
+
+  return await response.json();
+}
+
+async function apiPost(data) {
+  try {
+    const formData = new FormData();
+
+    formData.append("data", JSON.stringify(data));
+
+    const response = await fetch(API_URL, {
+      method: "POST",
+      body: formData
+    });
+
+    return await response.json();
+
+  } catch (err) {
+    console.error("שגיאה בשליחת הנתונים:", err);
+    return { success: false };
+  }
+}
+
+  
 // ── Helpers ──────────────────────────────────────────────────
 
 function safeFloat(v, def=0) {
