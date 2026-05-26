@@ -333,7 +333,7 @@ boxShadow:'0 2px 10px rgba(0,0,0,0.3)'
 // const API = "https://script.google.com/macros/s/AKfycbxsVMXN1kRKOmRnAJiyMhG__Wua0To6E3NOYu5e2-O0K6WTGH77L8T_Q6NrC2Z-4dso/exec";
 const APP_URL = window.location.origin + window.location.pathname;
 const ADMIN_CODE = "2026";
-const APP_VERSION = "v1.3.0";
+const APP_VERSION = "v1.3.1";
 const DIV_CODE = localStorage.getItem("DIV_CODE") || "1122";
 const API_URL = "https://script.google.com/macros/s/AKfycbxsVMXN1kRKOmRnAJiyMhG__Wua0To6E3NOYu5e2-O0K6WTGH77L8T_Q6NrC2Z-4dso/exec";
 
@@ -441,29 +441,6 @@ function scoreColor(s) {
 }
 
 // ── API calls ─────────────────────────────────────────────────
-
-async function apiPost(data) {
-
-  try {
-
-    await fetch(API_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      body: JSON.stringify(data)
-    });
-
-    console.log('📡 request sent');
-
-    return true;
-
-  } catch (err) {
-
-    console.error('POST ERROR:', err);
-
-    return false;
-  }
-}
-  
 // ── Team Division ─────────────────────────────────────────────
 
 const ROLE_GROUPS = {
