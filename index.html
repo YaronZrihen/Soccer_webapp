@@ -289,7 +289,7 @@ font-weight:bold;
 box-shadow:0 2px 8px rgba(0,0,0,0.3);
 pointer-events:none;
 ">
-v1.4.6
+v1.4.7
 </div>
 
 <div id="root"></div>
@@ -299,7 +299,7 @@ v1.4.6
 // const API = "https://script.google.com/macros/s/AKfycbxsVMXN1kRKOmRnAJiyMhG__Wua0To6E3NOYu5e2-O0K6WTGH77L8T_Q6NrC2Z-4dso/exec";
 const APP_URL = window.location.origin + window.location.pathname;
 const ADMIN_CODE = "2026";
-const APP_VERSION = "v1.4.6";
+const APP_VERSION = "v1.4.7";
 const DIV_CODE = localStorage.getItem("DIV_CODE") || "1122";
 const API_URL = "https://script.google.com/macros/s/AKfycbxsVMXN1kRKOmRnAJiyMhG__Wua0To6E3NOYu5e2-O0K6WTGH77L8T_Q6NrC2Z-4dso/exec";
 
@@ -636,6 +636,7 @@ function App() {
   const [tab, setTab]           = React.useState('divide');
   const [players, setPlayers]   = React.useState([]);
   const [history, setHistory]   = React.useState([]);
+  const historyRef              = React.useRef([]);  // תמיד עדכני, למניעת stale closure
   const [loading, setLoading]   = React.useState(true);
   const [saving,  setSaving]    = React.useState(false);
   const [msg,     setMsg]       = React.useState(null); // {type,text}
@@ -659,6 +660,7 @@ function App() {
       const hList = Array.isArray(hRes) ? hRes : [];
       setPlayers(pList);
       setHistory(hList);
+      historyRef.current = hList;
       setLoading(false);
 
       // WA deep-link check
@@ -687,8 +689,9 @@ function App() {
 };
 
 const saveHistory = async (updatedHistory) => {
+  historyRef.current = updatedHistory;  // עדכון מיידי של ה-ref
   if (typeof setHistory === 'function') {
-    setHistory(updatedHistory); // עדכון מיידי על המסך
+    setHistory(updatedHistory);
   }
   try {
     await apiPost({ action: 'saveHistory', history: updatedHistory });
@@ -731,10 +734,10 @@ const saveHistory = async (updatedHistory) => {
       {msg && <div className={`alert alert-${msg.type}`}>{msg.text}</div>}
       {saving && <div className="alert alert-info">⏳ שומר...</div>}
 
-      {tab==='divide'  && <TabDivide  players={players} history={history} auth={divAuth} onAuth={()=>setDivAuth(true)} onSaveHistory={saveHistory} showMsg={showMsg} />}
+      {tab==='divide'  && <TabDivide  players={players} history={history} historyRef={historyRef} auth={divAuth} onAuth={()=>setDivAuth(true)} onSaveHistory={saveHistory} showMsg={showMsg} />}
       {tab==='roster'  && <TabRoster  players={players} history={history} auth={adminAuth} onAuth={()=>setAdminAuth(true)} onSave={savePlayers} showMsg={showMsg} />}
       {tab==='update'  && <TabUpdate  players={players} tab3Auth={tab3Auth} setTab3Auth={setTab3Auth} adminAuth={adminAuth} onSave={savePlayers} showMsg={showMsg} />}
-      {tab==='history' && <TabHistory players={players} history={history} onSave={async(h)=>{await saveHistory(h); const updated=recalcWins(players,h); await savePlayers(updated);}} showMsg={showMsg} />}
+      {tab==='history' && <TabHistory players={players} history={history} historyRef={historyRef} onSave={async(h)=>{await saveHistory(h); const updated=recalcWins(players,h); await savePlayers(updated);}} showMsg={showMsg} />}
 
       <div className="tab-bar">
         {tabs.map(t=>(
@@ -764,7 +767,7 @@ function recalcWins(players, history) {
 
 // ── TAB: חלוקה ───────────────────────────────────────────────
 
-function TabDivide({players, history, auth, onAuth, onSaveHistory, showMsg}) {
+function TabDivide({players, history, historyRef, auth, onAuth, onSaveHistory, showMsg}) {
   const [selected, setSelected]   = React.useState([]);
   const [teams,    setTeams]       = React.useState(null);
   const [showField,setShowField]  = React.useState(false);
@@ -812,10 +815,8 @@ function TabDivide({players, history, auth, onAuth, onSaveHistory, showMsg}) {
 const saveGame = async () => {
     if (!gameDate || !teams) return;
 
-    // קריאת ה-history העדכני ישירות מה-Sheet כדי למנוע stale closure
-    const freshHistory = await apiFetch("getHistory");
-    const currentHistory = Array.isArray(freshHistory) ? freshHistory : history;
-
+    // שימוש ב-ref תמיד עדכני — ללא קריאת רשת נוספת
+    const currentHistory = historyRef.current;
     const existing = currentHistory.findIndex(g => g.date === gameDate);
 
     const whiteNames = teams.t1.map(p => p.name);
@@ -1302,7 +1303,7 @@ function PlayerForm({player, allPlayers, onSave}) {
 
 // ── TAB: היסטוריה ────────────────────────────────────────────
 
-function TabHistory({ players, history, onSave }) {
+function TabHistory({ players, history, historyRef, onSave }) {
   const [editingWinner, setEditingWinner] = React.useState(null); // { date, team }
   const [winnerInput, setWinnerInput]     = React.useState('');
 
@@ -1345,10 +1346,7 @@ function TabHistory({ players, history, onSave }) {
     if (!editingWinner) return;
     const { date, team } = editingWinner;
 
-    // טעינת history עדכני למניעת stale closure
-    const freshHistory = await apiFetch("getHistory");
-    const currentHistory = Array.isArray(freshHistory) ? freshHistory : history;
-
+    const currentHistory = historyRef.current;
     const updated = currentHistory.map(game => {
       if (game.date !== date) return game;
       const isWhiteWinner = team === 'לבן';
