@@ -289,7 +289,7 @@ font-weight:bold;
 box-shadow:0 2px 8px rgba(0,0,0,0.3);
 pointer-events:none;
 ">
-v1.4.0
+v1.4.1
 </div>
 
 <div id="root"></div>
@@ -299,7 +299,7 @@ v1.4.0
 // const API = "https://script.google.com/macros/s/AKfycbxsVMXN1kRKOmRnAJiyMhG__Wua0To6E3NOYu5e2-O0K6WTGH77L8T_Q6NrC2Z-4dso/exec";
 const APP_URL = window.location.origin + window.location.pathname;
 const ADMIN_CODE = "2026";
-const APP_VERSION = "v1.4.0";
+const APP_VERSION = "v1.4.1";
 const DIV_CODE = localStorage.getItem("DIV_CODE") || "1122";
 const API_URL = "https://script.google.com/macros/s/AKfycbxsVMXN1kRKOmRnAJiyMhG__Wua0To6E3NOYu5e2-O0K6WTGH77L8T_Q6NrC2Z-4dso/exec";
 
@@ -816,7 +816,7 @@ const saveGame = async () => {
       // שדות טקסט לתצוגה
       whitePlayers: teams.t1.map(p => p.name).join(", "),
       blackPlayers: teams.t2.map(p => p.name).join(", "),
-      // שדה players ריק עד שייקבע מנצח (TabHistory ישתמש בו)
+      // שדה players ייטען אוטומטית מהקבוצה המנצחת בעת קביעת מנצח (לא נדרש הזנה ידנית)
       players: "",
       winner: "",
     };
@@ -1318,12 +1318,13 @@ function TabHistory({ players, history, onSave }) {
   const statsArray = Object.values(playerStats).sort((a, b) => b.wins - a.wins || b.games - a.games);
 
   // תיקון: קביעת מנצח ללא window.prompt — שדה טקסט מובנה
+  // קביעת מנצח — שמות נטענים אוטומטית מהחלוקה, ניתן לעריכה אם נדרש
   const startEditWinner = (game, team) => {
-    const existing = game.winner === team
-      ? (team === 'לבן' ? game.whitePlayers : game.blackPlayers)
-      : '';
+    const autoPlayers = team === 'לבן'
+      ? (game.whitePlayers || (Array.isArray(game.team_white) ? game.team_white.join(', ') : ''))
+      : (game.blackPlayers || (Array.isArray(game.team_black) ? game.team_black.join(', ') : ''));
     setEditingWinner({ date: game.date, team });
-    setWinnerInput(existing || (team === 'לבן' ? game.whitePlayers : game.blackPlayers) || '');
+    setWinnerInput(autoPlayers);
   };
 
   const confirmWinner = async () => {
@@ -1392,7 +1393,10 @@ function TabHistory({ players, history, onSave }) {
           <div style={{ fontWeight: 700, marginBottom: 8, color: 'var(--accent)' }}>
             🏆 קביעת מנצח — קבוצה {editingWinner.team}
           </div>
-          <label className="form-label">שמות השחקנים המנצחים (מופרדים בפסיקים):</label>
+          <div className="alert alert-info" style={{ marginBottom: 10, fontSize: 13 }}>
+            ✅ שמות השחקנים נטענו אוטומטית מהחלוקה. ניתן לערוך אם נדרש.
+          </div>
+          <label className="form-label">שחקני הקבוצה המנצחת:</label>
           <textarea
             className="form-input"
             value={winnerInput}
