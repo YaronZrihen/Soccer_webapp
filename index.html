@@ -289,7 +289,7 @@ font-weight:bold;
 box-shadow:0 2px 8px rgba(0,0,0,0.3);
 pointer-events:none;
 ">
-v1.4.8
+v1.4.9
 </div>
 
 <div id="root"></div>
@@ -299,7 +299,7 @@ v1.4.8
 // const API = "https://script.google.com/macros/s/AKfycbxsVMXN1kRKOmRnAJiyMhG__Wua0To6E3NOYu5e2-O0K6WTGH77L8T_Q6NrC2Z-4dso/exec";
 const APP_URL = window.location.origin + window.location.pathname;
 const ADMIN_CODE = "2026";
-const APP_VERSION = "v1.4.8";
+const APP_VERSION = "v1.4.9";
 const DIV_CODE = localStorage.getItem("DIV_CODE") || "1122";
 const API_URL = "https://script.google.com/macros/s/AKfycbxsVMXN1kRKOmRnAJiyMhG__Wua0To6E3NOYu5e2-O0K6WTGH77L8T_Q6NrC2Z-4dso/exec";
 
@@ -806,10 +806,14 @@ function TabDivide({players, history, historyRef, auth, onAuth, onSaveHistory, s
   const swapPlayer = (from,to,idx) => {
     if (!teams) return;
     const nt1=[...teams.t1], nt2=[...teams.t2];
-    const [arr1,arr2] = from==='t1'?[nt1,nt2]:[nt2,nt1];
-    const player = arr1.splice(idx,1)[0];
-    arr2.push(player);
-    setTeams(from==='t1'?{t1:nt1,t2:nt2}:{t1:nt2,t2:nt1});
+    if (from==='t1') {
+      const [p] = nt1.splice(idx,1);
+      nt2.push(p);
+    } else {
+      const [p] = nt2.splice(idx,1);
+      nt1.push(p);
+    }
+    setTeams({t1:nt1, t2:nt2});
   };
 
   
@@ -856,6 +860,7 @@ const doSaveGame = async (currentHistory, existing) => {
     updated.sort((a, b) => String(b.date).localeCompare(String(a.date)));
 
     await onSaveHistory(updated);
+    window.scrollTo({top:0, behavior:'smooth'});
     showMsg('success', `✅ חלוקה נשמרה בהצלחה | ${APP_VERSION}`);
 };
 
@@ -926,7 +931,7 @@ const doSaveGame = async (currentHistory, existing) => {
             </div>
           )}
           <button className="btn btn-success" onClick={saveGame} disabled={!gameDate}>💾 שמור חלוקה להיסטוריה</button>
-          <div style={{height:40}}/>
+          <div style={{height:80}}/>
         </>
       )}
     </div>
@@ -946,20 +951,33 @@ function FormationInput({label, value, onChange}) {
 
 function TeamStats({t1,t2}) {
   const diff = Math.abs(teamAvg(t1)-teamAvg(t2));
-  const dc   = diff<0.5?'var(--accent2)':diff<1?'var(--warn)':'var(--danger)';
-  const a1s  = (teamAvg(t1)).toFixed(1);
-  const a2s  = (teamAvg(t2)).toFixed(1);
-  const a1g  = t1.length ? (t1.reduce((a,p)=>a+p.age,0)/t1.length).toFixed(1) : '—';
-  const a2g  = t2.length ? (t2.reduce((a,p)=>a+p.age,0)/t2.length).toFixed(1) : '—';
+  const dc   = diff<0.5?'#4caf50':diff<1?'#ffb300':'#f44336';
+  const dLabel = diff<0.5?'מאוזן 👌':diff<1?'פער קטן':'פער גדול';
+  const a1s  = teamAvg(t1).toFixed(1);
+  const a2s  = teamAvg(t2).toFixed(1);
+  const a1g  = t1.length?(t1.reduce((a,p)=>a+p.age,0)/t1.length).toFixed(1):'—';
+  const a2g  = t2.length?(t2.reduce((a,p)=>a+p.age,0)/t2.length).toFixed(1):'—';
   return (
-    <div className="card" style={{marginBottom:10}}>
-      <div style={{textAlign:'center',fontSize:14,color:dc,fontWeight:600,marginBottom:6}}>
-        פער בין קבוצות: {diff.toFixed(2)} | לבן: {t1.length} | שחור: {t2.length}
+    <div style={{background:'#1a1a2e',border:`2px solid ${dc}`,borderRadius:14,padding:'14px 16px',marginBottom:14}}>
+      {/* פער */}
+      <div style={{textAlign:'center',marginBottom:12}}>
+        <span style={{fontSize:13,color:'#aaa'}}>פער בין קבוצות</span>
+        <div style={{fontSize:32,fontWeight:900,color:dc,lineHeight:1.1}}>{diff.toFixed(2)}</div>
+        <span style={{fontSize:12,color:dc,fontWeight:700}}>{dLabel}</span>
       </div>
-      <div style={{display:'flex',justifyContent:'center',gap:20,fontSize:14}}>
-        <span style={{color:'var(--white-team)'}}>⚪ לבן — ציון: <b>{a1s}</b> | גיל: <b>{a1g}</b></span>
-        <span style={{color:'var(--muted)'}}>|</span>
-        <span style={{color:'var(--black-team)'}}>⚫ שחור — ציון: <b>{a2s}</b> | גיל: <b>{a2g}</b></span>
+      {/* שתי קבוצות */}
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+        {[
+          {label:'⚪ לבן', score:a1s, age:a1g, count:t1.length, color:'#b2dfdb'},
+          {label:'⚫ שחור', score:a2s, age:a2g, count:t2.length, color:'#ef9a9a'},
+        ].map(({label,score,age,count,color})=>(
+          <div key={label} style={{background:'rgba(255,255,255,0.04)',borderRadius:10,padding:'10px 12px',textAlign:'center'}}>
+            <div style={{fontSize:15,fontWeight:700,color,marginBottom:6}}>{label} ({count})</div>
+            <div style={{fontSize:22,fontWeight:900,color:'#fff'}}>{score}</div>
+            <div style={{fontSize:11,color:'#888',marginTop:2}}>ציון ממוצע</div>
+            <div style={{fontSize:13,color:'#bbb',marginTop:4}}>גיל ממוצע: <b>{age}</b></div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -1072,19 +1090,19 @@ function TabRoster({players, history, auth, onAuth, onSave, showMsg}) {
               <span>קבוצתי: <b style={{color:pr>=7?'var(--white-team)':pr>=5?'var(--warn)':'var(--muted)'}}>{pr??'—'}</b></span>
               <span>משוכלל: <b className={scoreColor(ws)} style={{color:ws>=7?'var(--white-team)':ws>=5?'var(--warn)':'var(--muted)'}}>{ws.toFixed(1)}</b></span>
             </div>
-            <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-              <button className="btn btn-secondary btn-sm" onClick={()=>toggleActive(p.name)}>
+            <div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:4}}>
+              <button className="btn btn-secondary btn-sm" style={{flex:'1 1 auto',minWidth:90}} onClick={()=>toggleActive(p.name)}>
                 {isActive(p)?'🔴 לא פעיל':'🟢 פעיל'}
               </button>
-              <button className="btn btn-secondary btn-sm" onClick={()=>setEditPlayer(p)}>📝 ערוך</button>
+              <button className="btn btn-secondary btn-sm" style={{flex:'1 1 auto',minWidth:72}} onClick={()=>setEditPlayer(p)}>📝 ערוך</button>
               {phone&&pin&&(
-                <button className="btn btn-wa btn-sm" onClick={()=>{
+                <button className="btn btn-wa btn-sm" style={{flex:'1 1 auto',minWidth:100}} onClick={()=>{
                   const link=`${APP_URL}?player=${encodeURIComponent(p.name)}&pin=${pin}`;
                   const msg=`שלום ${p.name.split(' ')[0]}! קישור: ${link} | קוד: ${pin}`;
                   window.open(`https://wa.me/972${phone.replace(/^0/,'')}?text=${encodeURIComponent(msg)}`,'_blank');
                 }}>💬 WhatsApp</button>
               )}
-              <button className="btn btn-danger btn-sm" onClick={()=>deletePlayer(p.name)}>🗑️</button>
+              <button className="btn btn-danger btn-sm" style={{flex:'1 1 auto',minWidth:56}} onClick={()=>deletePlayer(p.name)}>🗑️ מחק</button>
             </div>
           </div>
         );
@@ -1130,7 +1148,7 @@ function TabUpdate({players, tab3Auth, setTab3Auth, adminAuth, onSave, showMsg})
   );
 
   const isAdmin = tab3Auth==='__admin__';
-  const allOptions = ['🆕 שחקן חדש', ...players.map(p=>p.name).sort()];
+  const allOptions = ['🆕 שחקן חדש', ...players.map(p=>p.name).sort((a,b)=>a.localeCompare(b,'he'))];
   const effectiveChoice = isAdmin ? choice : tab3Auth;
   const pdata = players.find(p=>p.name===effectiveChoice)||null;
 
@@ -1332,6 +1350,13 @@ function PlayerForm({player, allPlayers, onSave}) {
 function TabHistory({ players, history, historyRef, onSave }) {
   const [editingWinner, setEditingWinner] = React.useState(null); // { date, team }
   const [winnerInput, setWinnerInput]     = React.useState('');
+  const winnerBoxRef                      = React.useRef(null);
+
+  React.useEffect(()=>{
+    if (editingWinner && winnerBoxRef.current) {
+      winnerBoxRef.current.scrollIntoView({behavior:'smooth', block:'center'});
+    }
+  }, [editingWinner]);
 
   // תיקון: חישוב ניצחונות נכון — מבדיל בין מנצחים למפסידים
   const playerStats = {};
@@ -1434,7 +1459,7 @@ function TabHistory({ players, history, historyRef, onSave }) {
 
       {/* מודל קביעת מנצח */}
       {editingWinner && (
-        <div style={{ background: '#0a1a3a', border: '1px solid var(--accent)', borderRadius: 10, padding: 16, marginBottom: 16 }}>
+        <div ref={winnerBoxRef} style={{ background: '#0a1a3a', border: '1px solid var(--accent)', borderRadius: 10, padding: 16, marginBottom: 16 }}>
           <div style={{ fontWeight: 700, marginBottom: 8, color: 'var(--accent)' }}>
             🏆 קביעת מנצח — קבוצה {editingWinner.team}
           </div>
