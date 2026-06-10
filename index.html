@@ -289,7 +289,7 @@ font-weight:bold;
 box-shadow:0 2px 8px rgba(0,0,0,0.3);
 pointer-events:none;
 ">
-v1.5.1
+v1.5.2
 </div>
 
 <div id="root"></div>
@@ -299,7 +299,7 @@ v1.5.1
 // const API = "https://script.google.com/macros/s/AKfycbxsVMXN1kRKOmRnAJiyMhG__Wua0To6E3NOYu5e2-O0K6WTGH77L8T_Q6NrC2Z-4dso/exec";
 const APP_URL = window.location.origin + window.location.pathname;
 const ADMIN_CODE = "2026";
-const APP_VERSION = "v1.5.1";
+const APP_VERSION = "v1.5.2";
 const DIV_CODE = localStorage.getItem("DIV_CODE") || "1122";
 const API_URL = "https://script.google.com/macros/s/AKfycbxsVMXN1kRKOmRnAJiyMhG__Wua0To6E3NOYu5e2-O0K6WTGH77L8T_Q6NrC2Z-4dso/exec";
 
@@ -793,7 +793,7 @@ function TabDivide({players, history, historyRef, auth, onAuth, onSaveHistory, s
   const [gameDate, setGameDate]   = React.useState(new Date().toISOString().split("T")[0]);
   const [formation,setFormation]  = React.useState(null);
   const [showForm, setShowForm]   = React.useState(false);
-  // תיקון: useState נקרא בצורה תקינה (לא בתוך array)
+  const [formationActive, setFormationActive] = React.useState(false); // ON/OFF
   const [fGk, setFGk]   = React.useState(1);
   const [fDef, setFDef] = React.useState(3);
   const [fMid, setFMid] = React.useState(3);
@@ -810,8 +810,7 @@ function TabDivide({players, history, historyRef, auth, onAuth, onSaveHistory, s
 
   const divide = (shuffle=false) => {
     if (selected.length<2) return;
-    // בנה formation מה-state האמיתי אם התבנית פתוחה
-    const activeFormation = showForm ? {
+    const activeFormation = formationActive ? {
       "שוערים": fGk,
       "מגנים":  fDef,
       "קשרים":  fMid,
@@ -897,45 +896,77 @@ const doSaveGame = async (currentHistory, existing) => {
       </div>
 
       {/* תבנית */}
-      <button className="expander-btn" onClick={()=>setShowForm(!showForm)}>
-        <span>⚽ תבנית משחק לפי תפקידים {showForm ? <span style={{fontSize:11,color:'var(--accent)'}}>● פעיל</span> : ''}</span>
-        <span>{showForm?'▲':'▼'}</span>
-      </button>
-      {showForm && (
-        <div className="expander-body">
-          <div style={{fontSize:12,color:'var(--muted)',marginBottom:8}}>
-            הגדר כמה שחקנים מכל תפקיד לכל קבוצה. החלוקה תעדיף לשבץ שחקנים לפי תפקידם.
+      <div style={{border:`2px solid ${formationActive?'var(--accent)':'#444'}`,borderRadius:10,marginBottom:12,overflow:'hidden',transition:'border-color 0.2s'}}>
+        {/* שורת כותרת עם ON/OFF */}
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 14px',background:'rgba(255,255,255,0.04)',cursor:'pointer'}} onClick={()=>setShowForm(!showForm)}>
+          <div style={{display:'flex',alignItems:'center',gap:10}}>
+            <span style={{fontSize:15,fontWeight:700}}>⚽ תבנית משחק לפי תפקידים</span>
+            {formationActive && <span style={{fontSize:11,background:'var(--accent)',color:'#000',padding:'2px 8px',borderRadius:20,fontWeight:700}}>פעיל</span>}
           </div>
-          <div style={{display:'flex',gap:8,marginBottom:12}}>
-            <FormationInput label="שוערים 🧤" value={fGk}  onChange={setFGk} />
-            <FormationInput label="מגנים 🛡️"  value={fDef} onChange={setFDef} />
-            <FormationInput label="קשרים ⚙️"  value={fMid} onChange={setFMid} />
-            <FormationInput label="חלוצים ⚡" value={fFwd} onChange={setFwd} />
-          </div>
-          {/* תצוגת תפקידי השחקנים הנבחרים */}
-          {selected.length > 0 && (() => {
-            const groups = {'שוערים':[],'מגנים':[],'קשרים':[],'חלוצים':[],'אחר':[]};
-            selected.forEach(name => {
-              const p = players.find(x=>x.name===name);
-              if (!p) return;
-              const role = getRole(p);
-              const group = ROLE_GROUPS[role]||'אחר';
-              groups[group].push({name, role});
-            });
-            return (
-              <div style={{background:'rgba(255,255,255,0.04)',borderRadius:8,padding:'10px 12px',fontSize:12}}>
-                <div style={{fontWeight:700,color:'var(--muted)',marginBottom:6}}>תפקידי השחקנים הנבחרים:</div>
-                {Object.entries(groups).filter(([,arr])=>arr.length>0).map(([group,arr])=>(
-                  <div key={group} style={{marginBottom:4}}>
-                    <span style={{color:'var(--accent)',fontWeight:600}}>{group} ({arr.length}): </span>
-                    <span style={{color:'#ccc'}}>{arr.map(p=> p.role ? `${p.name} (${p.role})` : p.name).join(', ')}</span>
-                  </div>
-                ))}
-              </div>
-            );
-          })()}
+          <span style={{color:'var(--muted)'}}>{showForm?'▲':'▼'}</span>
         </div>
-      )}
+
+        {showForm && (
+          <div style={{padding:'12px 14px'}}>
+            {/* כפתור ON/OFF */}
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
+              <span style={{fontSize:13,color:'var(--muted)'}}>השתמש בתבנית בחלוקה</span>
+              <div
+                onClick={()=>setFormationActive(v=>!v)}
+                style={{
+                  width:52,height:28,borderRadius:14,cursor:'pointer',
+                  background:formationActive?'var(--accent)':'#555',
+                  position:'relative',transition:'background 0.2s',flexShrink:0
+                }}
+              >
+                <div style={{
+                  position:'absolute',top:3,
+                  right:formationActive?3:undefined,
+                  left:formationActive?undefined:3,
+                  width:22,height:22,borderRadius:11,
+                  background:'#fff',transition:'all 0.2s',
+                  boxShadow:'0 1px 4px rgba(0,0,0,0.3)'
+                }}/>
+              </div>
+            </div>
+
+            {/* שדות כמות */}
+            <div style={{display:'flex',gap:8,marginBottom:12,opacity:formationActive?1:0.4,transition:'opacity 0.2s'}}>
+              <FormationInput label="🧤 שוערים" value={fGk}  onChange={setFGk} />
+              <FormationInput label="🛡️ מגנים"  value={fDef} onChange={setFDef} />
+              <FormationInput label="⚙️ קשרים"  value={fMid} onChange={setFMid} />
+              <FormationInput label="⚡ חלוצים" value={fFwd} onChange={setFwd} />
+            </div>
+
+            {/* תפקידי השחקנים הנבחרים */}
+            {selected.length > 0 && (() => {
+              const groups = {'שוערים':[],'מגנים':[],'קשרים':[],'חלוצים':[],'אחר':[]};
+              selected.forEach(name => {
+                const p = players.find(x=>x.name===name);
+                if (!p) return;
+                const role = getRole(p);
+                const group = ROLE_GROUPS[role]||'אחר';
+                groups[group].push({name, role});
+              });
+              return (
+                <div style={{background:'rgba(255,255,255,0.04)',borderRadius:8,padding:'10px 12px',fontSize:12}}>
+                  <div style={{fontWeight:700,color:'var(--muted)',marginBottom:6}}>תפקידי השחקנים הנבחרים:</div>
+                  {Object.entries(groups).filter(([,arr])=>arr.length>0).map(([group,arr])=>(
+                    <div key={group} style={{marginBottom:4,display:'flex',flexWrap:'wrap',gap:4,alignItems:'center'}}>
+                      <span style={{color:'var(--accent)',fontWeight:700,minWidth:70}}>{group} ({arr.length}):</span>
+                      {arr.map(({name,role})=>(
+                        <span key={name} style={{background:'rgba(255,255,255,0.08)',borderRadius:6,padding:'2px 7px',color:'#ddd'}}>
+                          {name}{role?<span style={{color:'var(--muted)'}}> · {role}</span>:''}
+                        </span>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+          </div>
+        )}
+      </div>
 
       <div style={{display:'flex',gap:8,margin:'12px 0'}}>
         <button className="btn btn-primary" style={{flex:1}} onClick={()=>divide(false)} disabled={selected.length<2}>חלק קבוצות 🚀</button>
