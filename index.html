@@ -289,7 +289,7 @@ font-weight:bold;
 box-shadow:0 2px 8px rgba(0,0,0,0.3);
 pointer-events:none;
 ">
-v1.4.9
+v1.5.0
 </div>
 
 <div id="root"></div>
@@ -299,7 +299,7 @@ v1.4.9
 // const API = "https://script.google.com/macros/s/AKfycbxsVMXN1kRKOmRnAJiyMhG__Wua0To6E3NOYu5e2-O0K6WTGH77L8T_Q6NrC2Z-4dso/exec";
 const APP_URL = window.location.origin + window.location.pathname;
 const ADMIN_CODE = "2026";
-const APP_VERSION = "v1.4.9";
+const APP_VERSION = "v1.5.0";
 const DIV_CODE = localStorage.getItem("DIV_CODE") || "1122";
 const API_URL = "https://script.google.com/macros/s/AKfycbxsVMXN1kRKOmRnAJiyMhG__Wua0To6E3NOYu5e2-O0K6WTGH77L8T_Q6NrC2Z-4dso/exec";
 
@@ -904,6 +904,30 @@ const doSaveGame = async (currentHistory, existing) => {
 
           <TeamDisplay team={teams.t1} tk="t1" onSwap={i=>swapPlayer('t1','t2',i)} color="var(--white-team)" title="⚪ לבן" bg="var(--team-white,#1a3a2a)" />
           <TeamDisplay team={teams.t2} tk="t2" onSwap={i=>swapPlayer('t2','t1',i)} color="var(--black-team)" title="⚫ שחור" bg="#3a1a1a" />
+
+          {/* כפתור שיתוף וואטסאפ */}
+          <button className="btn btn-wa" style={{width:'100%',margin:'8px 0',fontSize:15,padding:'12px 0'}} onClick={()=>{
+            const avg1 = teamAvg(teams.t1).toFixed(1);
+            const avg2 = teamAvg(teams.t2).toFixed(1);
+            const diff = Math.abs(teamAvg(teams.t1)-teamAvg(teams.t2)).toFixed(2);
+            const age1 = teams.t1.length?(teams.t1.reduce((a,p)=>a+p.age,0)/teams.t1.length).toFixed(1):'—';
+            const age2 = teams.t2.length?(teams.t2.reduce((a,p)=>a+p.age,0)/teams.t2.length).toFixed(1):'—';
+            const lines = [
+              `⚽ חלוקת קבוצות — ${gameDate.split('-').reverse().join('/')}`,
+              ``,
+              `⚪ קבוצה לבנה (${teams.t1.length} שחקנים)`,
+              teams.t1.map((p,i)=>`  ${i+1}. ${p.name}`).join('\n'),
+              `  📊 ציון: ${avg1} | גיל ממוצע: ${age1}`,
+              ``,
+              `⚫ קבוצה שחורה (${teams.t2.length} שחקנים)`,
+              teams.t2.map((p,i)=>`  ${i+1}. ${p.name}`).join('\n'),
+              `  📊 ציון: ${avg2} | גיל ממוצע: ${age2}`,
+              ``,
+              `📈 פער בין קבוצות: ${diff}`,
+            ];
+            const text = lines.join('\n');
+            window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+          }}>💬 שתף חלוקה בוואטסאפ</button>
 
           <button className="btn btn-secondary" style={{margin:'10px 0'}} onClick={()=>setShowField(!showField)}>
             🏟️ {showField?'הסתר מגרש':'הצג מגרש'}
