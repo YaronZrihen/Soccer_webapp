@@ -88,6 +88,10 @@
 
     /* ── Pills ── */
     .pills { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+    @keyframes popIn {
+      from { transform: scale(0.85); opacity: 0; }
+      to   { transform: scale(1);    opacity: 1; }
+    }
     .pill {
       padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); /* התאמה לסלולאר */
       background: var(--surface); color: var(--muted); font-size: 14px;
@@ -289,7 +293,7 @@ font-weight:bold;
 box-shadow:0 2px 8px rgba(0,0,0,0.3);
 pointer-events:none;
 ">
-v1.5.2
+v1.5.3
 </div>
 
 <div id="root"></div>
@@ -299,7 +303,7 @@ v1.5.2
 // const API = "https://script.google.com/macros/s/AKfycbxsVMXN1kRKOmRnAJiyMhG__Wua0To6E3NOYu5e2-O0K6WTGH77L8T_Q6NrC2Z-4dso/exec";
 const APP_URL = window.location.origin + window.location.pathname;
 const ADMIN_CODE = "2026";
-const APP_VERSION = "v1.5.2";
+const APP_VERSION = "v1.5.3";
 const DIV_CODE = localStorage.getItem("DIV_CODE") || "1122";
 const API_URL = "https://script.google.com/macros/s/AKfycbxsVMXN1kRKOmRnAJiyMhG__Wua0To6E3NOYu5e2-O0K6WTGH77L8T_Q6NrC2Z-4dso/exec";
 
@@ -1214,6 +1218,12 @@ function TabRoster({players, history, auth, onAuth, onSave, showMsg}) {
 // ── TAB: עדכון / הרשמה ───────────────────────────────────────
 
 function TabUpdate({players, tab3Auth, setTab3Auth, adminAuth, onSave, showMsg}) {
+  const [savedPopup, setSavedPopup] = React.useState(null); // שם השחקן שנשמר
+
+  const showSaved = (name) => {
+    setSavedPopup(name);
+    setTimeout(() => setSavedPopup(null), 3500);
+  };
   const [choice, setChoice] = React.useState('🆕 שחקן חדש');
   const [loginName, setLoginName] = React.useState('');
   const [loginPin,  setLoginPin]  = React.useState('');
@@ -1254,6 +1264,26 @@ function TabUpdate({players, tab3Auth, setTab3Auth, adminAuth, onSave, showMsg})
 
   return (
     <div>
+      {/* פופאפ הצלחה */}
+      {savedPopup && (
+        <div style={{
+          position:'fixed', inset:0, zIndex:99999,
+          display:'flex', alignItems:'center', justifyContent:'center',
+          background:'rgba(0,0,0,0.65)',
+        }} onClick={()=>setSavedPopup(null)}>
+          <div style={{
+            background:'#0a2a1a', border:'2px solid #4caf50',
+            borderRadius:20, padding:'36px 44px', textAlign:'center',
+            boxShadow:'0 8px 40px rgba(0,0,0,0.7)',
+            animation:'popIn 0.25s ease',
+          }}>
+            <div style={{fontSize:56, marginBottom:10}}>✅</div>
+            <div style={{fontSize:24, fontWeight:900, color:'#4caf50', marginBottom:8}}>הנתונים נשמרו!</div>
+            <div style={{fontSize:17, color:'#ccc', marginBottom:16}}>{savedPopup}</div>
+            <div style={{fontSize:12, color:'#555'}}>לחץ לסגירה</div>
+          </div>
+        </div>
+      )}
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
         <div>
           {isAdmin ? <span className="badge badge-blue">👑 מנהל</span>
@@ -1284,6 +1314,7 @@ function TabUpdate({players, tab3Auth, setTab3Auth, adminAuth, onSave, showMsg})
           }
           await onSave(updated);
           showMsg('success',`✅ ${entry.name} נשמר`);
+          showSaved(entry.name);
           if (isAdmin) setChoice(entry.name);
         }}
       />
