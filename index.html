@@ -293,7 +293,7 @@ font-weight:bold;
 box-shadow:0 2px 8px rgba(0,0,0,0.3);
 pointer-events:none;
 ">
-v1.5.5
+v1.5.7
 </div>
 
 <div id="root"></div>
@@ -303,7 +303,7 @@ v1.5.5
 // const API = "https://script.google.com/macros/s/AKfycbxsVMXN1kRKOmRnAJiyMhG__Wua0To6E3NOYu5e2-O0K6WTGH77L8T_Q6NrC2Z-4dso/exec";
 const APP_URL = window.location.origin + window.location.pathname;
 const ADMIN_CODE = "2026";
-const APP_VERSION = "v1.5.5";
+const APP_VERSION = "v1.5.7";
 const DIV_CODE = localStorage.getItem("DIV_CODE") || "1122";
 const API_URL = "https://script.google.com/macros/s/AKfycbxsVMXN1kRKOmRnAJiyMhG__Wua0To6E3NOYu5e2-O0K6WTGH77L8T_Q6NrC2Z-4dso/exec";
 
@@ -1042,7 +1042,19 @@ const doSaveGame = async (currentHistory, existing) => {
   );
 }
 
-function FormationInput({label, value, onChange}) {
+function WaButton({p}) {
+  const phone = cleanPhone(p.phone);
+  const pin   = cleanStr(p.pin);
+  if (!phone || !pin) return null;
+  const link = `${APP_URL}?player=${encodeURIComponent(p.name)}&pin=${pin}`;
+  const msg  = `שלום ${p.name.split(' ')[0]}! קישור: ${link} | קוד: ${pin}`;
+  return (
+    <button className="btn btn-wa btn-sm" style={{flex:'1 1 auto',minWidth:100}}
+      onClick={()=>window.open(`https://wa.me/972${phone.replace(/^0/,'')}?text=${encodeURIComponent(msg)}`,'_blank')}>
+      💬 WhatsApp
+    </button>
+  );
+}
   return (
     <div style={{flex:1,textAlign:'center'}}>
       <div style={{fontSize:11,color:'var(--muted)',marginBottom:4}}>{label}</div>
@@ -1199,13 +1211,7 @@ function TabRoster({players, history, auth, onAuth, onSave, showMsg}) {
                 {isActive(p)?'🔴 לא פעיל':'🟢 פעיל'}
               </button>
               <button className="btn btn-secondary btn-sm" style={{flex:'1 1 auto',minWidth:72}} onClick={()=>setEditPlayer(p)}>📝 ערוך</button>
-              {phone&&pin&&(
-                <button className="btn btn-wa btn-sm" style={{flex:'1 1 auto',minWidth:100}} onClick={()=>{
-                  const link=`${APP_URL}?player=${encodeURIComponent(p.name)}&pin=${pin}`;
-                  const msg=`שלום ${p.name.split(' ')[0]}! קישור: ${link} | קוד: ${pin}`;
-                  window.open(`https://wa.me/972${phone.replace(/^0/,'')}?text=${encodeURIComponent(msg)}`,'_blank');
-                }}>💬 WhatsApp</button>
-              )}
+              <WaButton p={p} />
               <button className="btn btn-danger btn-sm" style={{flex:'1 1 auto',minWidth:56}} onClick={()=>deletePlayer(p.name)}>🗑️ מחק</button>
             </div>
           </div>
@@ -1421,7 +1427,12 @@ function PlayerForm({player, allPlayers, onSave, isAdmin=false}) {
       <div className="form-group">
         <label className="form-label">שנת לידה *</label>
         <input className="form-input" type="number" min={1950} max={2015} value={year}
-          onChange={e=>setYear(Math.max(1950,Math.min(2015,safeInt(e.target.value,1990))))}/>
+          onChange={e=>setYear(e.target.value)}
+          onBlur={e=>{
+            const v=safeInt(e.target.value,1990);
+            setYear(Math.max(1950,Math.min(2015,v)));
+          }}
+          placeholder="1950–2015"/>
       </div>
 
       <div className="form-group">
