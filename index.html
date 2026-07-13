@@ -247,7 +247,7 @@
 
 const VERSION = "v1.5";
 
-const API = "https://script.google.com/macros/s/AKfycbwhfKqd6D-mlxNXpVeV9WOwuC9ihdgoXazND6MqMcknaBe1K5_uQUEKDteQJQBe4GMJ/exec";
+const API = "https://script.google.com/macros/s/AKfycby4q4hIxFSfXQ_VzklKUzdCk9OG2npzW2Dl2twzorHUnVWuVSkJHTTwn3B11wbvQSGH/exec";
 const APP_URL = window.location.origin + window.location.pathname;
 const ADMIN_CODE = "2026";
 const DIV_CODE   = "1122";
@@ -672,12 +672,19 @@ function TabDivide({players, history, auth, onAuth, onSaveHistory, showMsg}) {
     setShowField(false);
   };
 
-  const swapPlayer = (from,to,idx) => {
+  const swapPlayer = (from, playerName) => {
     if (!teams) return;
-    const nt1=[...teams.t1], nt2=[...teams.t2];
-    const [arr1,arr2] = from==='t1'?[nt1,nt2]:[nt2,nt1];
-    arr2.push(arr1.splice(idx,1)[0]);
-    setTeams(from==='t1'?{t1:nt1,t2:nt2}:{t1:nt2,t2:nt1});
+    const nt1 = [...teams.t1], nt2 = [...teams.t2];
+    if (from === 't1') {
+      const idx = nt1.findIndex(p => p.name === playerName);
+      if (idx === -1) return;
+      nt2.push(nt1.splice(idx, 1)[0]);
+    } else {
+      const idx = nt2.findIndex(p => p.name === playerName);
+      if (idx === -1) return;
+      nt1.push(nt2.splice(idx, 1)[0]);
+    }
+    setTeams({ t1: nt1, t2: nt2 });
   };
 
   // FIX: שמור team1 ו-team2 בנפרד + תאריך בפורמט נכון
@@ -774,8 +781,8 @@ function TabDivide({players, history, auth, onAuth, onSaveHistory, showMsg}) {
       {teams && (
         <>
           <TeamStats t1={teams.t1} t2={teams.t2} />
-          <TeamDisplay team={teams.t1} tk="t1" onSwap={i=>swapPlayer('t1','t2',i)} color="var(--white-team)" title="⚪ לבן" bg="#1a3a2a" />
-          <TeamDisplay team={teams.t2} tk="t2" onSwap={i=>swapPlayer('t2','t1',i)} color="var(--black-team)" title="⚫ שחור" bg="#3a1a1a" />
+          <TeamDisplay team={teams.t1} tk="t1" onSwap={name=>swapPlayer('t1',name)} color="var(--white-team)" title="⚪ לבן" bg="#1a3a2a" />
+          <TeamDisplay team={teams.t2} tk="t2" onSwap={name=>swapPlayer('t2',name)} color="var(--black-team)" title="⚫ שחור" bg="#3a1a1a" />
 
           <button className="btn btn-secondary" style={{margin:'10px 0'}} onClick={()=>setShowField(!showField)}>
             🏟️ {showField?'הסתר מגרש':'הצג מגרש'}
@@ -841,7 +848,7 @@ function TeamDisplay({team,tk,onSwap,title,bg}) {
           <span><b>{p.name}</b> <span style={{color:'var(--muted)',fontSize:14}}>({p.age})</span></span>
           <div style={{display:'flex',alignItems:'center',gap:8}}>
             <span className={`score-badge ${scoreColor(p.score)}`}>{p.score.toFixed(1)}</span>
-            <button className="btn btn-secondary btn-sm" onClick={()=>onSwap(i)}>🔄</button>
+            <button className="btn btn-secondary btn-sm" onClick={()=>onSwap(p.name)}>🔄</button>
           </div>
         </div>
       ))}
