@@ -245,7 +245,7 @@
 <div id="root"></div>
 <script type="text/babel">
 
-const VERSION = "v1.6";
+const VERSION = "v1.7";
 
 const API = "https://script.google.com/macros/s/AKfycby4q4hIxFSfXQ_VzklKUzdCk9OG2npzW2Dl2twzorHUnVWuVSkJHTTwn3B11wbvQSGH/exec";
 const APP_URL = window.location.origin + window.location.pathname;
@@ -342,8 +342,20 @@ function scoreColor(s) { if (s>=7) return 'score-hi'; if (s>=5) return 'score-mi
 // ── FIX: תאריך בלבד ללא שעה ───────────────────────────────────
 function formatDate(dateStr) {
   if (!dateStr) return '';
-  // חתוך כל מה שאחרי ה-T (שעה)
-  return String(dateStr).split('T')[0];
+  const s = String(dateStr);
+  // פורמט ISO: 2026-07-10T... או 2026-07-10
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.split('T')[0];
+  // פורמט Date object כ-string: Fri Jul 10 2026 ...
+  try {
+    const d = new Date(s);
+    if (!isNaN(d.getTime())) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth()+1).padStart(2,'0');
+      const day = String(d.getDate()).padStart(2,'0');
+      return `${y}-${m}-${day}`;
+    }
+  } catch {}
+  return s.split('T')[0];
 }
 
 // ── Team Division ──────────────────────────────────────────────
@@ -629,6 +641,7 @@ function TabDivide({players, history, auth, onAuth, onSaveHistory, showMsg}) {
   const [showForm,    setShowForm]    = React.useState(false);
   const [savedLists,  setSavedLists]  = React.useState({});
   const [showLists,   setShowLists]   = React.useState(false);
+  const [gameSaved,   setGameSaved]   = React.useState(false);
   const [saveListName,setSaveListName]= React.useState('');
   const [listsLoading,setListsLoading]= React.useState(false);
 
@@ -704,6 +717,7 @@ function TabDivide({players, history, auth, onAuth, onSaveHistory, showMsg}) {
     updated.sort((a,b)=>formatDate(b.date).localeCompare(formatDate(a.date)));
     await onSaveHistory(updated);
     showMsg('success', `✅ חלוקה נשמרה לתאריך ${cleanDate}`);
+    setGameSaved(true);
   };
 
   return (
@@ -797,7 +811,14 @@ function TabDivide({players, history, auth, onAuth, onSaveHistory, showMsg}) {
               onChange={e=>setGameDate(e.target.value)}
               style={{colorScheme:'dark'}} />
           </div>
-          <button className="btn btn-success" onClick={saveGame} disabled={!gameDate}>💾 שמור חלוקה להיסטוריה</button>
+          <button className="btn btn-success" onClick={saveGame} disabled={!gameDate || gameSaved}>
+            {gameSaved ? '✅ נשמר!' : '💾 שמור חלוקה להיסטוריה'}
+          </button>
+          {gameSaved && (
+            <button className="btn btn-secondary" style={{marginTop:6}} onClick={()=>setGameSaved(false)}>
+              שמור שוב / עדכן
+            </button>
+          )}
           <div style={{height:40}}/>
         </>
       )}
@@ -1186,7 +1207,6 @@ function PlayerForm({player, allPlayers, onSave}) {
 // ── TAB: היסטוריה ─────────────────────────────────────────────
 function TabHistory({ players, history, onSave, showMsg }) {
 
-  // FIX: ניצחון נקבע על פי team1/team2 הקיימים — ללא prompt
   const handleWinner = async (gameDate, winnerTeam) => {
     const updatedHistory = history.map(game => {
       if (formatDate(game.date) !== formatDate(gameDate)) return game;
@@ -1194,6 +1214,13 @@ function TabHistory({ players, history, onSave, showMsg }) {
     });
     await onSave(updatedHistory);
     if (showMsg) showMsg('success', winnerTeam ? `🏆 קבוצה ${winnerTeam} סומנה כמנצחת` : '↩ בחירה בוטלה');
+  };
+
+  const deleteGame = async (gameDate) => {
+    if (!window.confirm(`למחוק את המשחק מתאריך ${formatDate(gameDate)}?`)) return;
+    const updated = history.filter(g => formatDate(g.date) !== formatDate(gameDate));
+    await onSave(updated);
+    if (showMsg) showMsg('success', '🗑️ משחק נמחק');
   };
 
   // FIX: סטטיסטיקה מחושבת מ-team1/team2 + wins מתוך player_stats
@@ -1310,6 +1337,11 @@ function TabHistory({ players, history, onSave, showMsg }) {
                   ↩
                 </button>
               )}
+              <button
+                style={{ padding: '8px 12px', background: '#450a0a', color: '#fca5a5', border: '1px solid #7f1d1d', borderRadius: '4px', cursor: 'pointer', fontFamily: 'var(--font)', fontSize: '14px', marginRight: 'auto' }}
+                onClick={() => deleteGame(game.date)}>
+                🗑️
+              </button>
             </div>
           </div>
         );
