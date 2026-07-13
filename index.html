@@ -717,7 +717,6 @@ function TabDivide({players, history, auth, onAuth, onSaveHistory, showMsg}) {
           style={{fontSize:13}}>
           📋 רשימות שמורות {Object.keys(savedLists).length>0?`(${Object.keys(savedLists).length})`:''}{listsLoading?' ⏳':''}
         </button>
-        </button>
         {selected.length>0&&(
           <div style={{display:'flex',gap:4,flex:1,minWidth:160}}>
             <input className="form-input" placeholder="שם רשימה לשמירה..."
