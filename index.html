@@ -245,7 +245,7 @@
 <div id="root"></div>
 <script type="text/babel">
 
-const VERSION = "v1.7";
+const VERSION = "v2.1";
 
 const API = "https://script.google.com/macros/s/AKfycby4q4hIxFSfXQ_VzklKUzdCk9OG2npzW2Dl2twzorHUnVWuVSkJHTTwn3B11wbvQSGH/exec";
 const APP_URL = window.location.origin + window.location.pathname;
@@ -740,12 +740,13 @@ function TabDivide({players, history, auth, onAuth, onSaveHistory, showMsg}) {
         </button>
         {selected.length>0&&(
           <div style={{display:'flex',gap:4,flex:1,minWidth:160}}>
-            <input className="form-input" placeholder="שם רשימה לשמירה..."
+            <input className="form-input" placeholder="שם לרשימה (לדוגמה: שישי קבוע)"
               value={saveListName} onChange={e=>setSaveListName(e.target.value)}
               onKeyDown={e=>e.key==='Enter'&&saveList()}
               style={{padding:'6px 10px',fontSize:13,flex:1}}/>
             <button className="btn btn-primary btn-sm" onClick={saveList}
-              disabled={!saveListName.trim()} style={{fontSize:13,whiteSpace:'nowrap'}}>💾 שמור</button>
+              disabled={!saveListName.trim()} title="הכנס שם לרשימה ולחץ שמור"
+              style={{fontSize:13,whiteSpace:'nowrap'}}>💾 שמור</button>
           </div>
         )}
         {selected.length>0&&(
@@ -802,6 +803,22 @@ function TabDivide({players, history, auth, onAuth, onSaveHistory, showMsg}) {
             🏟️ {showField?'הסתר מגרש':'הצג מגרש'}
           </button>
           {showField && <Field t1={teams.t1} t2={teams.t2} players={players} />}
+
+          <button className="btn btn-wa" style={{marginBottom:10}} onClick={()=>{
+            const avg1    = teamAvg(teams.t1).toFixed(1);
+            const avg2    = teamAvg(teams.t2).toFixed(1);
+            const age1    = (teams.t1.reduce((a,p)=>a+p.age,0)/teams.t1.length).toFixed(1);
+            const age2    = (teams.t2.reduce((a,p)=>a+p.age,0)/teams.t2.length).toFixed(1);
+            const t1lines = teams.t1.map(p=>`• ${p.name}`).join('\n');
+            const t2lines = teams.t2.map(p=>`• ${p.name}`).join('\n');
+            const msg =
+              `⚽ חלוקת קבוצות:\n\n` +
+              `⚪ לבן | רמה: ${avg1} | גיל ממוצע: ${age1}\n${t1lines}\n\n` +
+              `⚫ שחור | רמה: ${avg2} | גיל ממוצע: ${age2}\n${t2lines}`;
+            window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,'_blank');
+          }}>
+            💬 שתף קבוצות ב-WhatsApp
+          </button>
 
           <hr className="divider" />
           <div className="form-group">
@@ -966,20 +983,6 @@ function TabRoster({players, history, auth, onAuth, onSave, showMsg}) {
               <span>קבוצתי: <b style={{color:pr>=7?'var(--white-team)':pr>=5?'var(--warn)':'var(--muted)'}}>{pr??'—'}</b></span>
               <span>משוכלל: <b style={{color:ws>=7?'var(--white-team)':ws>=5?'var(--warn)':'var(--muted)'}}>{ws.toFixed(1)}</b></span>
             </div>
-
-            {/* FIX: עמודות קבוצה לבן / שחור מהמשחק האחרון */}
-            {lastGame && (
-              <div style={{display:'flex',gap:8,marginBottom:8}}>
-                <div className="team-info-box" style={{flex:1}}>
-                  <div className="team-info-label" style={{color:'var(--white-team)'}}>⚪ לבן — {formatDate(lastGame.date)}</div>
-                  <div className="team-info-players">{lastTeam1.join(', ')||'—'}</div>
-                </div>
-                <div className="team-info-box" style={{flex:1}}>
-                  <div className="team-info-label" style={{color:'var(--black-team)'}}>⚫ שחור — {formatDate(lastGame.date)}</div>
-                  <div className="team-info-players">{lastTeam2.join(', ')||'—'}</div>
-                </div>
-              </div>
-            )}
 
             <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
               <button className="btn btn-secondary btn-sm" onClick={()=>toggleActive(p.name)}>
