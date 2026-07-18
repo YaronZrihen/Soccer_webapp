@@ -245,7 +245,7 @@
 <div id="root"></div>
 <script type="text/babel">
 
-const VERSION = "v2.5";
+const VERSION = "v2.6";
 
 const API = "https://script.google.com/macros/s/AKfycby4q4hIxFSfXQ_VzklKUzdCk9OG2npzW2Dl2twzorHUnVWuVSkJHTTwn3B11wbvQSGH/exec";
 const APP_URL = window.location.origin + window.location.pathname;
@@ -679,11 +679,12 @@ function TabDivide({players, history, auth, onAuth, onSaveHistory, onSavePlayers
   if (showMgrRatings) {
     const sorted = [...players].filter(isActive).sort((a,b)=>a.name.localeCompare(b.name,'he'));
 
+    const [mgrSaved, setMgrSaved] = React.useState(false);
     const saveMgrRatings = async () => {
       const updated = players.map(p => ({...p, admin_rating: String(mgrRatings[p.name]||'')}));
       await onSavePlayers(updated);
-      showMsg('success','✅ ציוני מנהל נשמרו בהצלחה!');
-      window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'});
+      setMgrSaved(true);
+      setTimeout(()=>setMgrSaved(false), 4000);
     };
 
     return (
@@ -753,7 +754,10 @@ function TabDivide({players, history, auth, onAuth, onSaveHistory, onSavePlayers
             </tbody>
           </table>
         </div>
-        <button className="btn btn-primary" style={{marginTop:12}} onClick={saveMgrRatings}>💾 שמור ציוני מנהל</button>
+        <div style={{display:'flex',alignItems:'center',gap:10,marginTop:12}}>
+          <button className="btn btn-primary" style={{flex:1}} onClick={saveMgrRatings}>💾 שמור ציוני מנהל</button>
+          {mgrSaved && <span style={{color:'var(--accent2)',fontWeight:700,fontSize:15,whiteSpace:'nowrap'}}>✅ נשמר!</span>}
+        </div>
       </div>
     );
   }
@@ -1350,7 +1354,7 @@ function PlayerForm({player, allPlayers, onSave}) {
 
       <div className="form-group"><label className="form-label">שם מלא *</label><input className="form-input" value={name} onChange={e=>setName(e.target.value)} placeholder="הכנס שם מלא"/></div>
       <div className="form-group"><label className="form-label">מספר פלאפון *</label><input className="form-input" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="05X-XXXXXXX"/></div>
-      <div className="form-group"><label className="form-label">שנת לידה *</label><input className="form-input" type="number" min={1950} max={2015} value={year} onChange={e=>setYear(Math.max(1950,Math.min(2015,safeInt(e.target.value,1990))))}/></div>
+      <div className="form-group"><label className="form-label">שנת לידה *</label><input className="form-input" type="number" min={1950} max={2015} value={year} onChange={e=>{ const v=safeInt(e.target.value,0); if(v===0||e.target.value==='') setYear(''); else setYear(v); }} onBlur={e=>{ const v=safeInt(e.target.value,1990); setYear(Math.max(1950,Math.min(2015,v))); }}/></div>
 
       <div className="form-group">
         <label className="form-label">תפקידים *<br/><span style={{fontWeight:400,color:'var(--muted)'}}>בחר תפקידים, לאחר מכן בחר תפקיד עיקרי</span></label>
