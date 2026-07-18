@@ -245,7 +245,7 @@
 <div id="root"></div>
 <script type="text/babel">
 
-const VERSION = "v2.9";
+const VERSION = "v3.0";
 
 const API = "https://script.google.com/macros/s/AKfycby4q4hIxFSfXQ_VzklKUzdCk9OG2npzW2Dl2twzorHUnVWuVSkJHTTwn3B11wbvQSGH/exec";
 const APP_URL = window.location.origin + window.location.pathname;
@@ -943,8 +943,28 @@ function TabDivide({players, history, auth, onAuth, onSaveHistory, onSavePlayers
       {teams && (
         <>
           <TeamStats t1={teams.t1} t2={teams.t2} />
-          <TeamDisplay team={teams.t1} tk="t1" onSwap={name=>swapPlayer('t1',name)} color="var(--white-team)" title="⚪ לבן" bg="#1a3a2a" />
-          <TeamDisplay team={teams.t2} tk="t2" onSwap={name=>swapPlayer('t2',name)} color="var(--black-team)" title="⚫ שחור" bg="#3a1a1a" />
+
+          {/* תפקידים חסרים בתבנית */}
+          {useFormation && (() => {
+            const missing = [];
+            Object.entries(formValues).forEach(([group, needed]) => {
+              if (!needed) return;
+              const t1c = teams.t1.filter(p=>p.group===group).length;
+              const t2c = teams.t2.filter(p=>p.group===group).length;
+              if (t1c < needed) missing.push(`⚪ לבן חסר ${needed-t1c} ${group}`);
+              if (t2c < needed) missing.push(`⚫ שחור חסר ${needed-t2c} ${group}`);
+            });
+            return missing.length > 0 ? (
+              <div className="alert alert-warn" style={{marginBottom:8}}>
+                ⚠️ תפקידים חסרים: {missing.join(' | ')}
+              </div>
+            ) : (
+              <div className="alert alert-success" style={{marginBottom:8}}>✅ כל התפקידים מאוישים</div>
+            );
+          })()}
+
+          <TeamDisplay team={teams.t1} tk="t1" onSwap={name=>swapPlayer('t1',name)} title="⚪ לבן" bg="#1a3a2a" formation={useFormation?formValues:null} />
+          <TeamDisplay team={teams.t2} tk="t2" onSwap={name=>swapPlayer('t2',name)} title="⚫ שחור" bg="#3a1a1a" formation={useFormation?formValues:null} />
 
           <button className="btn btn-secondary" style={{margin:'10px 0'}} onClick={()=>setShowField(!showField)}>
             🏟️ {showField?'הסתר מגרש':'הצג מגרש'}
@@ -956,8 +976,8 @@ function TabDivide({players, history, auth, onAuth, onSaveHistory, onSavePlayers
             const avg2    = teamAvg(teams.t2).toFixed(1);
             const age1    = (teams.t1.reduce((a,p)=>a+p.age,0)/teams.t1.length).toFixed(1);
             const age2    = (teams.t2.reduce((a,p)=>a+p.age,0)/teams.t2.length).toFixed(1);
-            const t1lines = teams.t1.map(p=>`• ${p.name}`).join('\n');
-            const t2lines = teams.t2.map(p=>`• ${p.name}`).join('\n');
+            const t1lines = teams.t1.map(p=>`• ${p.name}${p.role?' | '+p.role:''} | ${p.age}`).join('\n');
+            const t2lines = teams.t2.map(p=>`• ${p.name}${p.role?' | '+p.role:''} | ${p.age}`).join('\n');
             const sep     = '..........................';
             const msg =
               `⚽ חלוקת קבוצות:\n\n` +
@@ -1021,7 +1041,7 @@ function TeamStats({t1,t2}) {
   );
 }
 
-function TeamDisplay({team,tk,onSwap,title,bg}) {
+function TeamDisplay({team,tk,onSwap,title,bg,formation}) {
   const avg    = teamAvg(team);
   const ageAvg = team.length ? (team.reduce((a,p)=>a+p.age,0)/team.length).toFixed(1) : '—';
   return (
@@ -1029,9 +1049,30 @@ function TeamDisplay({team,tk,onSwap,title,bg}) {
       <div className="team-header" style={{background:bg}}>
         {title} ({team.length}) <span style={{fontSize:13,fontWeight:400}}>| רמה {avg.toFixed(1)} | גיל {ageAvg}</span>
       </div>
+      {/* סיכום תפקידים כשיש תבנית */}
+      {formation && (
+        <div style={{display:'flex',gap:6,flexWrap:'wrap',padding:'6px 12px',background:'rgba(0,0,0,0.2)',borderBottom:'1px solid var(--border)'}}>
+          {Object.entries(formation).map(([group,needed])=>{
+            if (!needed) return null;
+            const count = team.filter(p=>p.group===group).length;
+            const ok    = count >= needed;
+            return (
+              <span key={group} style={{fontSize:11,padding:'2px 7px',borderRadius:4,
+                background:ok?'rgba(34,211,160,0.15)':'rgba(239,68,68,0.15)',
+                color:ok?'var(--accent2)':'var(--danger)',border:`1px solid ${ok?'var(--accent2)':'var(--danger)'}`}}>
+                {group}: {count}/{needed}
+              </span>
+            );
+          })}
+        </div>
+      )}
       {team.map((p,i)=>(
         <div key={p.name} className="player-row">
-          <span><b>{p.name}</b> <span style={{color:'var(--muted)',fontSize:14}}>({p.age})</span></span>
+          <span style={{flex:1}}>
+            <b>{p.name}</b>
+            {p.role && <span style={{color:'var(--muted)',fontSize:13}}> | {p.role}</span>}
+            <span style={{color:'var(--muted)',fontSize:13}}> | {p.age}</span>
+          </span>
           <div style={{display:'flex',alignItems:'center',gap:8}}>
             <span className={`score-badge ${scoreColor(p.score)}`}>{p.score.toFixed(1)}</span>
             <button className="btn btn-secondary btn-sm" onClick={()=>onSwap(p.name)}>🔄</button>
