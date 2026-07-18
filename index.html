@@ -245,12 +245,13 @@
 <div id="root"></div>
 <script type="text/babel">
 
-const VERSION = "v2.1";
+const VERSION = "v2.3";
 
 const API = "https://script.google.com/macros/s/AKfycby4q4hIxFSfXQ_VzklKUzdCk9OG2npzW2Dl2twzorHUnVWuVSkJHTTwn3B11wbvQSGH/exec";
 const APP_URL = window.location.origin + window.location.pathname;
-const ADMIN_CODE = "2026";
-const DIV_CODE   = "1122";
+const ADMIN_CODE   = "2026";
+const DIV_CODE     = "1122";
+const MANAGER_CODE = "3344"; // מנהל חלוקה
 
 // ── CORS fix: JSONP for GET ────────────────────────────────────
 function jsonpFetch(url) {
@@ -329,8 +330,19 @@ function peerAvg(player, allPlayers) {
   if (!received.length) return null;
   return Math.round(received.reduce((a,b)=>a+b,0)/received.length*10)/10;
 }
+function adminRating(player) {
+  const f = safeFloat(player.admin_rating); return f>0 ? f : null;
+}
 function playerScore(player, allPlayers) {
-  const s = selfRating(player); const p = peerAvg(player, allPlayers);
+  const s = selfRating(player);
+  const p = peerAvg(player, allPlayers);
+  const a = adminRating(player);
+  // נוסחה: 70% מנהל + 20% קבוצתי + 10% אישי
+  if (a!==null && p!==null && s!==null) return Math.round((a*0.7 + p*0.2 + s*0.1)*100)/100;
+  if (a!==null && p!==null)             return Math.round((a*0.7 + p*0.3)*100)/100;
+  if (a!==null && s!==null)             return Math.round((a*0.7 + s*0.3)*100)/100;
+  if (a!==null)                         return Math.round(a*100)/100;
+  // fallback ללא ציון מנהל — נוסחה ישנה
   if (s!==null && p!==null) return Math.round((s*0.6+p*0.4)*100)/100;
   if (s!==null) return s;
   return 0;
@@ -641,9 +653,19 @@ function TabDivide({players, history, auth, onAuth, onSaveHistory, showMsg}) {
   const [showForm,    setShowForm]    = React.useState(false);
   const [savedLists,  setSavedLists]  = React.useState({});
   const [showLists,   setShowLists]   = React.useState(false);
-  const [gameSaved,   setGameSaved]   = React.useState(false);
-  const [saveListName,setSaveListName]= React.useState('');
-  const [listsLoading,setListsLoading]= React.useState(false);
+  const [gameSaved,     setGameSaved]     = React.useState(false);
+  const [saveListName,  setSaveListName]  = React.useState('');
+  const [listsLoading,  setListsLoading]  = React.useState(false);
+  const [showMgrRatings,setShowMgrRatings]= React.useState(false);
+  const [mgrAuth,       setMgrAuth]       = React.useState(false);
+  const [mgrRatings,    setMgrRatings]    = React.useState({});
+
+  // טעינת ציוני מנהל קיימים
+  React.useEffect(() => {
+    const r = {};
+    players.forEach(p => { const v=safeFloat(p.admin_rating); if(v>0) r[p.name]=v; });
+    setMgrRatings(r);
+  }, [players]);
 
   // טעינת רשימות מהענן בפתיחה
   React.useEffect(() => {
@@ -653,6 +675,88 @@ function TabDivide({players, history, auth, onAuth, onSaveHistory, showMsg}) {
   }, []);
 
   if (!auth) return <PasswordScreen code={DIV_CODE} onSuccess={onAuth} title="כניסה לחלוקה" />;
+
+  // מסך ציוני מנהל חלוקה
+  if (showMgrRatings) {
+    if (!mgrAuth) return (
+      <div>
+        <button className="btn btn-secondary btn-sm" style={{marginBottom:14}} onClick={()=>setShowMgrRatings(false)}>← חזור</button>
+        <PasswordScreen code={MANAGER_CODE} onSuccess={()=>setMgrAuth(true)} title="כניסה — מנהל חלוקה" />
+      </div>
+    );
+
+    const sorted = [...players].filter(isActive).sort((a,b)=>a.name.localeCompare(b.name,'he'));
+
+    const saveMgrRatings = async () => {
+      const updated = players.map(p => ({...p, admin_rating: String(mgrRatings[p.name]||'')}));
+      await onSavePlayers(updated);
+      showMsg('success','✅ ציוני מנהל נשמרו');
+    };
+
+    return (
+      <div>
+        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:14}}>
+          <button className="btn btn-secondary btn-sm" onClick={()=>setShowMgrRatings(false)}>← חזור לחלוקה</button>
+          <div style={{flex:1,fontSize:17,fontWeight:700}}>⭐ ציוני מנהל חלוקה</div>
+          <button className="btn btn-primary btn-sm" onClick={saveMgrRatings}>💾 שמור</button>
+        </div>
+        <div style={{fontSize:12,color:'var(--muted)',marginBottom:12,background:'var(--card)',borderRadius:8,padding:'8px 12px'}}>
+          נוסחה: <b style={{color:'var(--warn)'}}>70%</b> מנהל + <b style={{color:'var(--accent)'}}>20%</b> קבוצתי + <b style={{color:'var(--accent2)'}}>10%</b> אישי
+        </div>
+        <div style={{overflowX:'auto'}}>
+          <table style={{width:'100%',borderCollapse:'collapse',fontSize:13}}>
+            <thead>
+              <tr style={{background:'var(--surface)',borderBottom:'2px solid var(--border)'}}>
+                <th style={{padding:'8px 6px',textAlign:'right'}}>שם</th>
+                <th style={{padding:'8px 6px',textAlign:'center'}}>גיל</th>
+                <th style={{padding:'8px 6px',textAlign:'right',fontSize:11}}>תפקיד</th>
+                <th style={{padding:'8px 6px',textAlign:'center',fontSize:11}}>אישי</th>
+                <th style={{padding:'8px 6px',textAlign:'center',fontSize:11}}>קבוצתי</th>
+                <th style={{padding:'8px 6px',textAlign:'center',color:'var(--warn)'}}>מנהל</th>
+                <th style={{padding:'8px 6px',textAlign:'center',color:'var(--accent2)'}}>משוכלל</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sorted.map((p,i) => {
+                const sr = selfRating(p);
+                const pr = peerAvg(p, players);
+                const ar = mgrRatings[p.name] || null;
+                const primary = String(p.primary_role||'').replace(/nan|none/gi,'').trim();
+                const tempP = {...p, admin_rating: String(ar||'')};
+                const ws = playerScore(tempP, players.map(x=>x.name===p.name?tempP:x));
+                const sc = v => v>=7?'var(--white-team)':v>=5?'var(--warn)':'var(--muted)';
+                return (
+                  <tr key={p.name} style={{borderBottom:'1px solid var(--border)',background:i%2===0?'transparent':'rgba(255,255,255,0.02)'}}>
+                    <td style={{padding:'8px 6px',fontWeight:600}}>{p.name}</td>
+                    <td style={{padding:'8px 6px',textAlign:'center',color:'var(--muted)'}}>{playerAge(p)}</td>
+                    <td style={{padding:'8px 6px',color:'var(--muted)',fontSize:11}}>{primary||'—'}</td>
+                    <td style={{padding:'8px 6px',textAlign:'center',color:sr?sc(sr):'var(--muted)'}}>{sr??'—'}</td>
+                    <td style={{padding:'8px 6px',textAlign:'center',color:pr?sc(pr):'var(--muted)'}}>{pr??'—'}</td>
+                    <td style={{padding:'4px 3px',textAlign:'center'}}>
+                      <div style={{display:'flex',justifyContent:'center',gap:2,flexWrap:'wrap'}}>
+                        {[1,2,3,4,5,6,7,8,9,10].map(n=>(
+                          <div key={n} onClick={()=>setMgrRatings(prev=>({...prev,[p.name]:prev[p.name]===n?null:n}))}
+                            style={{width:24,height:24,borderRadius:4,
+                              background:mgrRatings[p.name]===n?'var(--warn)':'var(--surface)',
+                              color:mgrRatings[p.name]===n?'#111':'var(--muted)',
+                              border:'1px solid var(--border)',
+                              display:'flex',alignItems:'center',justifyContent:'center',
+                              cursor:'pointer',fontSize:11,fontWeight:600}}>{n}</div>
+                        ))}
+                      </div>
+                    </td>
+                    <td style={{padding:'8px 6px',textAlign:'center',fontWeight:700,color:sc(ws),fontSize:15}}>{ws.toFixed(1)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <div style={{height:12}}/>
+        <button className="btn btn-primary" onClick={saveMgrRatings}>💾 שמור ציוני מנהל</button>
+      </div>
+    );
+  }
 
   const active = players.filter(isActive).map(p=>p.name).sort();
   const toggle = name => setSelected(prev => prev.includes(name)?prev.filter(n=>n!==name):[...prev,name]);
@@ -792,6 +896,10 @@ function TabDivide({players, history, auth, onAuth, onSaveHistory, showMsg}) {
         <button className="btn btn-primary" style={{flex:1}} onClick={()=>divide(false)} disabled={selected.length<2}>חלק קבוצות 🚀</button>
         <button className="btn btn-secondary" style={{flex:1}} onClick={()=>divide(true)} disabled={selected.length<2}>ערבב מחדש 🔀</button>
       </div>
+      <button className="btn btn-secondary" style={{marginBottom:10,background:'var(--warn)',color:'#111',border:'none'}}
+        onClick={()=>setShowMgrRatings(true)}>
+        ⭐ ציוני מנהל חלוקה
+      </button>
 
       {teams && (
         <>
@@ -896,11 +1004,96 @@ function TeamDisplay({team,tk,onSwap,title,bg}) {
 
 // ── TAB: מאגר שחקנים ──────────────────────────────────────────
 function TabRoster({players, history, auth, onAuth, onSave, showMsg}) {
-  const [search,     setSearch]     = React.useState('');
-  const [showOff,    setShowOff]    = React.useState(false);
-  const [editPlayer, setEditPlayer] = React.useState(null);
+  const [search,      setSearch]      = React.useState('');
+  const [showOff,     setShowOff]     = React.useState(false);
+  const [editPlayer,  setEditPlayer]  = React.useState(null);
 
   if (!auth) return <PasswordScreen code={ADMIN_CODE} onSuccess={onAuth} title="כניסה למנהל" />;
+
+  if (false) {
+    const sorted = [...players]
+      .filter(p => isActive(p))
+      .sort((a,b) => a.name.localeCompare(b.name, 'he'));
+
+    const saveRatings = async () => {
+      const updated = players.map(p => ({
+        ...p,
+        admin_rating: String(adminRatings[p.name] || '')
+      }));
+      await onSave(updated);
+      showMsg('success', '✅ ציוני מנהל נשמרו');
+    };
+
+    return (
+      <div>
+        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:14}}>
+          <button className="btn btn-secondary btn-sm" onClick={()=>setShowRatings(false)}>← חזור</button>
+          <div style={{flex:1,fontSize:17,fontWeight:700}}>⭐ ציוני מנהל</div>
+          <button className="btn btn-primary btn-sm" onClick={saveRatings}>💾 שמור הכל</button>
+        </div>
+        <div style={{fontSize:12,color:'var(--muted)',marginBottom:12,background:'var(--card)',borderRadius:8,padding:'8px 12px'}}>
+          נוסחת ציון משוכלל: <b style={{color:'var(--accent)'}}>70%</b> מנהל + <b style={{color:'var(--accent)'}}>20%</b> קבוצתי + <b style={{color:'var(--accent)'}}>10%</b> אישי
+        </div>
+
+        {/* טבלה */}
+        <div style={{overflowX:'auto'}}>
+          <table style={{width:'100%',borderCollapse:'collapse',fontSize:13}}>
+            <thead>
+              <tr style={{background:'var(--surface)',borderBottom:'2px solid var(--border)'}}>
+                <th style={{padding:'8px 6px',textAlign:'right'}}>שם</th>
+                <th style={{padding:'8px 6px',textAlign:'center'}}>גיל</th>
+                <th style={{padding:'8px 6px',textAlign:'right'}}>תפקיד</th>
+                <th style={{padding:'8px 6px',textAlign:'center'}}>אישי</th>
+                <th style={{padding:'8px 6px',textAlign:'center'}}>קבוצתי</th>
+                <th style={{padding:'8px 6px',textAlign:'center',color:'var(--warn)'}}>מנהל</th>
+                <th style={{padding:'8px 6px',textAlign:'center',color:'var(--accent2)'}}>משוכלל</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sorted.map((p,i) => {
+                const sr  = selfRating(p);
+                const pr  = peerAvg(p, players);
+                const ar  = adminRatings[p.name] || null;
+                const primary = String(p.primary_role||'').replace(/nan|none/gi,'').trim();
+                // חשב משוכלל זמני עם ציון מנהל הנוכחי
+                const tempP = {...p, admin_rating: String(ar||'')};
+                const ws  = playerScore(tempP, players.map(x=>x.name===p.name?tempP:x));
+                const scC = (v) => v>=7?'var(--white-team)':v>=5?'var(--warn)':'var(--muted)';
+                return (
+                  <tr key={p.name} style={{borderBottom:'1px solid var(--border)',background:i%2===0?'transparent':'rgba(255,255,255,0.02)'}}>
+                    <td style={{padding:'8px 6px',fontWeight:600}}>{p.name}</td>
+                    <td style={{padding:'8px 6px',textAlign:'center',color:'var(--muted)'}}>{playerAge(p)}</td>
+                    <td style={{padding:'8px 6px',color:'var(--muted)',fontSize:12}}>{primary||'—'}</td>
+                    <td style={{padding:'8px 6px',textAlign:'center',color:sr?scC(sr):'var(--muted)'}}>{sr??'—'}</td>
+                    <td style={{padding:'8px 6px',textAlign:'center',color:pr?scC(pr):'var(--muted)'}}>{pr??'—'}</td>
+                    <td style={{padding:'4px 6px',textAlign:'center'}}>
+                      <div style={{display:'flex',justifyContent:'center',gap:3,flexWrap:'wrap'}}>
+                        {[1,2,3,4,5,6,7,8,9,10].map(n=>(
+                          <div key={n}
+                            onClick={()=>setAdminRatings(prev=>({...prev,[p.name]:prev[p.name]===n?null:n}))}
+                            style={{
+                              width:26,height:26,borderRadius:5,
+                              background:adminRatings[p.name]===n?'var(--accent)':'var(--surface)',
+                              color:adminRatings[p.name]===n?'white':'var(--muted)',
+                              border:'1px solid var(--border)',
+                              display:'flex',alignItems:'center',justifyContent:'center',
+                              cursor:'pointer',fontSize:11,fontWeight:600
+                            }}>{n}</div>
+                        ))}
+                      </div>
+                    </td>
+                    <td style={{padding:'8px 6px',textAlign:'center',fontWeight:700,color:scC(ws),fontSize:15}}>{ws.toFixed(1)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <div style={{height:16}}/>
+        <button className="btn btn-primary" onClick={saveRatings}>💾 שמור ציוני מנהל</button>
+      </div>
+    );
+  }
 
   const genAllPins = async () => {
     let changed=false;
@@ -948,7 +1141,7 @@ function TabRoster({players, history, auth, onAuth, onSave, showMsg}) {
       </div>
 
       {filtered.map(p => {
-        const sr=selfRating(p), pr=peerAvg(p,players), ws=playerScore(p,players);
+        const sr=selfRating(p), pr=peerAvg(p,players), ar=adminRating(p), ws=playerScore(p,players);
         const wins=safeInt(p.win_points);
         const phone=cleanPhone(p.phone), pin=cleanStr(p.pin);
         const primary=String(p.primary_role||'').replace(/nan|none/i,'').trim();
@@ -981,7 +1174,8 @@ function TabRoster({players, history, auth, onAuth, onSave, showMsg}) {
             <div style={{display:'flex',gap:12,fontSize:14,marginBottom:8,flexWrap:'wrap'}}>
               <span>אישי: <b style={{color:sr>=7?'var(--white-team)':sr>=5?'var(--warn)':'var(--muted)'}}>{sr??'—'}</b></span>
               <span>קבוצתי: <b style={{color:pr>=7?'var(--white-team)':pr>=5?'var(--warn)':'var(--muted)'}}>{pr??'—'}</b></span>
-              <span>משוכלל: <b style={{color:ws>=7?'var(--white-team)':ws>=5?'var(--warn)':'var(--muted)'}}>{ws.toFixed(1)}</b></span>
+              {ar&&<span>מנהל: <b style={{color:ar>=7?'var(--white-team)':ar>=5?'var(--warn)':'var(--muted)'}}>{ar}</b></span>}
+              <span>משוכלל: <b style={{color:ws>=7?'var(--white-team)':ws>=5?'var(--warn)':'var(--muted)',fontSize:14}}>{ws.toFixed(1)}</b></span>
             </div>
 
             <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
@@ -1127,6 +1321,7 @@ function PlayerForm({player, allPlayers, onSave}) {
       peer_ratings:JSON.stringify(Object.fromEntries(Object.entries(peers).filter(([,v])=>v>0))),
       active:String(active), phone:phone.trim(), pin:newPin,
       win_points:String(safeInt(player?.win_points)),
+      admin_rating:String(safeFloat(player?.admin_rating)||''),
     };
     await onSave(entry); setErrors([]);
   };
