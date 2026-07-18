@@ -245,7 +245,7 @@
 <div id="root"></div>
 <script type="text/babel">
 
-const VERSION = "v3.1";
+const VERSION = "v3.2";
 
 const API = "https://script.google.com/macros/s/AKfycby4q4hIxFSfXQ_VzklKUzdCk9OG2npzW2Dl2twzorHUnVWuVSkJHTTwn3B11wbvQSGH/exec";
 const APP_URL = window.location.origin + window.location.pathname;
@@ -1032,13 +1032,21 @@ function TeamStats({t1,t2}) {
   const a2g  = t2.length ? (t2.reduce((a,p)=>a+p.age,0)/t2.length).toFixed(1) : '—';
   return (
     <div className="card" style={{marginBottom:10}}>
-      <div style={{textAlign:'center',fontSize:14,color:dc,fontWeight:600,marginBottom:6}}>
+      <div style={{textAlign:'center',fontSize:14,color:dc,fontWeight:600,marginBottom:8}}>
         פער בין קבוצות: {diff.toFixed(2)} | לבן: {t1.length} | שחור: {t2.length}
       </div>
-      <div style={{display:'flex',justifyContent:'center',gap:20,fontSize:14}}>
-        <span style={{color:'var(--white-team)'}}>⚪ לבן — ציון: <b>{teamAvg(t1).toFixed(1)}</b> | גיל: <b>{a1g}</b></span>
-        <span style={{color:'var(--muted)'}}>|</span>
-        <span style={{color:'var(--black-team)'}}>⚫ שחור — ציון: <b>{teamAvg(t2).toFixed(1)}</b> | גיל: <b>{a2g}</b></span>
+      <div style={{display:'flex',justifyContent:'center',gap:16,fontSize:14}}>
+        <div style={{textAlign:'center',color:'var(--white-team)'}}>
+          <div>⚪ לבן</div>
+          <div style={{fontSize:13,marginTop:3}}>ציון: <b>{teamAvg(t1).toFixed(1)}</b></div>
+          <div style={{fontSize:13}}>גיל: <b>{a1g}</b></div>
+        </div>
+        <div style={{width:1,background:'var(--border)',margin:'0 4px'}}/>
+        <div style={{textAlign:'center',color:'var(--black-team)'}}>
+          <div>⚫ שחור</div>
+          <div style={{fontSize:13,marginTop:3}}>ציון: <b>{teamAvg(t2).toFixed(1)}</b></div>
+          <div style={{fontSize:13}}>גיל: <b>{a2g}</b></div>
+        </div>
       </div>
     </div>
   );
@@ -1073,8 +1081,8 @@ function TeamDisplay({team,tk,onSwap,title,bg,formation}) {
         <div key={p.name} className="player-row">
           <span style={{flex:1}}>
             <b>{p.name}</b>
-            {p.role && <span style={{color:'var(--muted)',fontSize:13}}> | {p.role}</span>}
-            <span style={{color:'var(--muted)',fontSize:13}}> | {p.age}</span>
+            {p.role && <span style={{color:'var(--muted)',fontSize:13}}> &nbsp;|&nbsp; {p.role}</span>}
+            <span style={{color:'var(--muted)',fontSize:13}}> &nbsp;|&nbsp; {p.age}</span>
           </span>
           <div style={{display:'flex',alignItems:'center',gap:8}}>
             <span className={`score-badge ${scoreColor(p.score)}`}>{p.score.toFixed(1)}</span>
