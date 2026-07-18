@@ -245,7 +245,7 @@
 <div id="root"></div>
 <script type="text/babel">
 
-const VERSION = "v2.7";
+const VERSION = "v2.8";
 
 const API = "https://script.google.com/macros/s/AKfycby4q4hIxFSfXQ_VzklKUzdCk9OG2npzW2Dl2twzorHUnVWuVSkJHTTwn3B11wbvQSGH/exec";
 const APP_URL = window.location.origin + window.location.pathname;
@@ -651,8 +651,10 @@ function TabDivide({players, history, auth, onAuth, onSaveHistory, onSavePlayers
   const [teams,       setTeams]       = React.useState(null);
   const [showField,   setShowField]   = React.useState(false);
   const [gameDate,    setGameDate]    = React.useState('');
-  const [formation,   setFormation]   = React.useState(null);
-  const [showForm,    setShowForm]    = React.useState(false);
+  const [formation,     setFormation]     = React.useState(null);
+  const [showForm,      setShowForm]      = React.useState(false);
+  const [useFormation,  setUseFormation]  = React.useState(false);
+  const [formValues,    setFormValues]    = React.useState({שוערים:1,מגנים:3,קשרים:3,חלוצים:2});
   const [savedLists,  setSavedLists]  = React.useState({});
   const [showLists,     setShowLists]     = React.useState(false);
   const [gameSaved,     setGameSaved]     = React.useState(false);
@@ -791,7 +793,8 @@ function TabDivide({players, history, auth, onAuth, onSaveHistory, onSavePlayers
 
   const divide = (shuffle=false) => {
     if (selected.length<2) return;
-    setTeams(divideTeams(selected, players, formation, shuffle));
+    const activeFormation = useFormation ? formValues : null;
+    setTeams(divideTeams(selected, players, activeFormation, shuffle));
     setShowField(false);
   };
 
@@ -890,11 +893,23 @@ function TabDivide({players, history, auth, onAuth, onSaveHistory, onSavePlayers
       </button>
       {showForm && (
         <div className="expander-body">
-          <div style={{display:'flex',gap:8,marginTop:8}}>
-            {[['שוערים',1],['מגנים',3],['קשרים',3],['חלוצים',2]].map(([label,def])=>(
-              <FormationInput key={label} label={label} def={def} onChange={v=>{}} />
-            ))}
+          <div className="toggle-wrap" style={{margin:'8px 0'}} onClick={()=>setUseFormation(!useFormation)}>
+            <div className={`toggle${useFormation?' on':''}`}/>
+            <span style={{fontSize:13}}>הפעל תבנית</span>
+            {useFormation && <span className="badge badge-blue" style={{fontSize:11}}>פעיל</span>}
           </div>
+          {useFormation && (
+            <div style={{display:'flex',gap:8,marginTop:8}}>
+              {['שוערים','מגנים','קשרים','חלוצים'].map(label=>(
+                <div key={label} style={{flex:1,textAlign:'center'}}>
+                  <div style={{fontSize:11,color:'var(--muted)',marginBottom:4}}>{label}</div>
+                  <input type="number" min={0} max={6} value={formValues[label]}
+                    onChange={e=>setFormValues(prev=>({...prev,[label]:safeInt(e.target.value,0)}))}
+                    className="form-input" style={{textAlign:'center',padding:'6px 4px'}}/>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -925,10 +940,11 @@ function TabDivide({players, history, auth, onAuth, onSaveHistory, onSavePlayers
             const age2    = (teams.t2.reduce((a,p)=>a+p.age,0)/teams.t2.length).toFixed(1);
             const t1lines = teams.t1.map(p=>`• ${p.name}`).join('\n');
             const t2lines = teams.t2.map(p=>`• ${p.name}`).join('\n');
+            const sep     = '..........................';
             const msg =
               `⚽ חלוקת קבוצות:\n\n` +
-              `⚪ לבן | רמה: ${avg1} | גיל ממוצע: ${age1}\n${t1lines}\n\n` +
-              `⚫ שחור | רמה: ${avg2} | גיל ממוצע: ${age2}\n${t2lines}`;
+              `לבנים\nרמה: ${avg1}\nגיל ממוצע: ${age1}\n${sep}\n${t1lines}\n\n` +
+              `שחורים\nרמה: ${avg2}\nגיל ממוצע: ${age2}\n${sep}\n${t2lines}`;
             window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,'_blank');
           }}>
             💬 שתף קבוצות ב-WhatsApp
