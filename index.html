@@ -245,7 +245,7 @@
 <div id="root"></div>
 <script type="text/babel">
 
-const VERSION = "v3.0";
+const VERSION = "v3.1";
 
 const API = "https://script.google.com/macros/s/AKfycby4q4hIxFSfXQ_VzklKUzdCk9OG2npzW2Dl2twzorHUnVWuVSkJHTTwn3B11wbvQSGH/exec";
 const APP_URL = window.location.origin + window.location.pathname;
@@ -976,13 +976,16 @@ function TabDivide({players, history, auth, onAuth, onSaveHistory, onSavePlayers
             const avg2    = teamAvg(teams.t2).toFixed(1);
             const age1    = (teams.t1.reduce((a,p)=>a+p.age,0)/teams.t1.length).toFixed(1);
             const age2    = (teams.t2.reduce((a,p)=>a+p.age,0)/teams.t2.length).toFixed(1);
-            const t1lines = teams.t1.map(p=>`• ${p.name}${p.role?' | '+p.role:''} | ${p.age}`).join('\n');
-            const t2lines = teams.t2.map(p=>`• ${p.name}${p.role?' | '+p.role:''} | ${p.age}`).join('\n');
-            const sep     = '..........................';
+            const t1sorted = [...teams.t1].sort((a,b)=>a.age-b.age);
+            const t2sorted = [...teams.t2].sort((a,b)=>a.age-b.age);
+            const t1lines  = t1sorted.map(p=>`• ${p.name} | ${p.age}`).join('\n');
+            const t2lines  = t2sorted.map(p=>`• ${p.name} | ${p.age}`).join('\n');
+            const sep      = '..........................';
+            const footer   = '\n# רשימת השחקנים ממוינת לפי גיל לצורך רוטציות שוערים.';
             const msg =
               `⚽ חלוקת קבוצות:\n\n` +
-              `לבנים\nרמה: ${avg1}\nגיל ממוצע: ${age1}\n${sep}\n${t1lines}\n\n` +
-              `שחורים\nרמה: ${avg2}\nגיל ממוצע: ${age2}\n${sep}\n${t2lines}`;
+              `⚪ לבנים\nרמה: ${avg1}\nגיל ממוצע: ${age1}\n${sep}\n${t1lines}\n\n` +
+              `⚫ שחורים\nרמה: ${avg2}\nגיל ממוצע: ${age2}\n${sep}\n${t2lines}${footer}`;
             window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,'_blank');
           }}>
             💬 שתף קבוצות ב-WhatsApp
